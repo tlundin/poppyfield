@@ -1,0 +1,136 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "1fb1697682c11e0c8de1f86ac1d87fed",
+    "entities": [
+      {
+        "tableName": "variabler",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `UUID` TEXT NOT NULL, `L1` TEXT, `L2` TEXT, `L3` TEXT, `L4` TEXT, `L5` TEXT, `L6` TEXT, `L7` TEXT, `L8` TEXT, `L9` TEXT, `L10` TEXT, `var` TEXT, `value` TEXT, `lag` TEXT, `author` TEXT, `timestamp` INTEGER NOT NULL, `year` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "UUID",
+            "columnName": "UUID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "L1",
+            "columnName": "L1",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L2",
+            "columnName": "L2",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L3",
+            "columnName": "L3",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L4",
+            "columnName": "L4",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L5",
+            "columnName": "L5",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L6",
+            "columnName": "L6",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L7",
+            "columnName": "L7",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L8",
+            "columnName": "L8",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L9",
+            "columnName": "L9",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "L10",
+            "columnName": "L10",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "var",
+            "columnName": "var",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lag",
+            "columnName": "lag",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "author",
+            "columnName": "author",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "year",
+            "columnName": "year",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1fb1697682c11e0c8de1f86ac1d87fed')"
+    ]
+  }
+}
