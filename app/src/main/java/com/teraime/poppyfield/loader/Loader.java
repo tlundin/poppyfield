@@ -1,59 +1,45 @@
 package com.teraime.poppyfield.loader;
 
-import android.app.DownloadManager;
-import android.content.Context;
 import android.os.AsyncTask;
-import android.os.Build;
-import android.provider.SyncStateContract;
-import android.util.Log;
 
-import androidx.lifecycle.MutableLiveData;
-
+import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.S;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class Loader  {
 
     static String protocol = "http://";
 
+    
     public static void getManifest(LoaderCb callback, String app) {
         String Manifest = "content.txt";
         String url = S.SERVER + "/" + app + "/gis_objects/";
         new DownloadFileTask(callback).execute(protocol+ url + Manifest);
     }
-    public static void getSpinners(LoaderCb callback, String app) {
-        String spinners = "Spinners.csv";
+    public static void getModule(LoaderCb callback, String app, String module) {
         String url = S.SERVER + "/" + app + "/";
-        new DownloadFileTask(callback).execute(protocol+ url + spinners);
+        new DownloadFileTask(callback).execute(protocol+ url + module);
     }
 
-
-    public static void loadAllFiles(LoaderCb loaderCb, MutableLiveData<List<String>> mLoadLog, List<String> mManifest, String app, List<List<String>> files) {
+    public static void loadGisModules(LoaderCb loaderCb, List<String> mManifest, String app, List<List<String>> files) {
         String url = "www.teraim.com/"+app+"/gis_objects/";
         for (String gisFile:mManifest) {
-            new DownloadFileTask(new LoaderCb() {
-                @Override
-                public void loaded(List<String> file) {
-                    mLoadLog.getValue().add(gisFile);
-                    mLoadLog.postValue(mLoadLog.getValue());
-                    files.add(file);
-                    if (files.size()==mManifest.size())
-                        loaderCb.loaded(null);
-                }
+            new DownloadFileTask(file -> {
+                Logger.gl().d("LOAD",gisFile);
+                files.add(file);
+                if (files.size()==mManifest.size())
+                    loaderCb.loaded(null);
             }).execute(protocol+ url + gisFile + ".json");
         }
     }
-
-
+    
     private static class DownloadFileTask extends AsyncTask<String, Void, List<String>> {
         final LoaderCb cb;
 
@@ -68,11 +54,12 @@ public class Loader  {
             List<String> file = null;
             try {
                 website = new URL(url[0]);
-                //Log.d("URL",website.toString());
+                Logger.gl().d("URL",website.toString());
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
             try {
+                assert website != null;
                 URLConnection ucon = website.openConnection();
                 ucon.setConnectTimeout(5000);
                 in = new BufferedReader(new InputStreamReader(ucon.getInputStream()));
@@ -86,6 +73,7 @@ public class Loader  {
 
             } catch (Exception e) {
                 e.printStackTrace();
+                file = null;
             }
             return file;
         }

@@ -1,5 +1,8 @@
-package com.teraime.poppyfield.base;
+package com.teraime.poppyfield.loader.Configurations;
 
+import android.util.Log;
+
+import java.util.Arrays;
 import java.util.List;
 
 public class Config<T> {
@@ -12,5 +15,7 @@ public class Config<T> {
         rawData=x;
         return (T)this;
     }
-
+    public String getVersion() {
+        return version;
+    }
 }

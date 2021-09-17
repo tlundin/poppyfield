@@ -20,13 +20,13 @@ public class Tools {
                         result.add(input.substring(start,current));
                     result.add("");
                 } else {
-                    //Log.d("nils","Last char: "+input.charAt(current));
+                    //Logger.gl().d("nils","Last char: "+input.charAt(current));
                     result.add(input.substring(start));
                 }
             }
             else if (input.charAt(current) == ',' && !inQuotes) {
                 String toAdd = input.substring(start, current);
-                //Log.d("Adding",toAdd);
+                //Logger.gl().d("Adding",toAdd);
 
                 result.add(toAdd);
                 start = current + 1;

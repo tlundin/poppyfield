@@ -1,7 +1,8 @@
 package com.teraime.poppyfield.base;
 import androidx.annotation.NonNull;
 
-import com.teraime.poppyfield.parsers.SpinnerParser;
+import com.teraime.poppyfield.loader.Configurations.Config;
+import com.teraime.poppyfield.loader.parsers.SpinnerParser;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.ArrayList;

@@ -5,6 +5,7 @@ import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
+import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
 
@@ -68,7 +69,7 @@ public class FieldPadRepository {
         for(String key:g.getKeys().keySet()) {
             colName=map.get(key);
             if (colName==null)
-                Log.e("v","missing key "+key);
+                Logger.gl().e("v","missing key "+key);
             else
                 am.put(colName,g.getKeys().get(key));
         }

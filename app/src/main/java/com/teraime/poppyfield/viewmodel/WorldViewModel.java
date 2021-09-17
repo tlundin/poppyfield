@@ -9,11 +9,15 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.teraime.poppyfield.loader.Configurations.GroupsConfiguration;
+import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.Spinners;
+import com.teraime.poppyfield.loader.Configurations.VariablesConfiguration;
 import com.teraime.poppyfield.gis.GisObject;
+import com.teraime.poppyfield.loader.Configurations.WorkflowBundle;
 import com.teraime.poppyfield.loader.Loader;
 import com.teraime.poppyfield.loader.LoaderCb;
-import com.teraime.poppyfield.gis.GisType;
+import com.teraime.poppyfield.loader.Configurations.GisType;
 import com.teraime.poppyfield.room.FieldPadRepository;
 import com.teraime.poppyfield.room.VariableTable;
 
@@ -23,7 +27,7 @@ import java.util.List;
 public class WorldViewModel extends AndroidViewModel {
 
     private final FieldPadRepository mRepository;
-    private final MutableLiveData<List<String>> mLoadLog = new MutableLiveData<>();
+    private MutableLiveData<Logger> mLoadLog;
     private List<String> mManifest;
     private final LiveData<List<VariableTable>> mVariables;
 
@@ -31,15 +35,15 @@ public class WorldViewModel extends AndroidViewModel {
         super(application);
         mRepository = new FieldPadRepository(application);
         mVariables = mRepository.getTimeOrderedList();
-        mLoadLog.setValue(new ArrayList<>());
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
         //Load manifest
         String app=prefs.getString("App","smabio");
         List<List<String>> geoJsonFiles = new ArrayList<>();
+
         Loader.getManifest(fileList -> {
             mManifest = (List<String>)fileList;
-            Loader.loadAllFiles(new LoaderCb() {
+            Loader.loadGisModules(new LoaderCb() {
                 @Override
                 public void loaded(List<String> _d) {
                     int i=0;
@@ -49,15 +53,14 @@ public class WorldViewModel extends AndroidViewModel {
                             long t1 = System.currentTimeMillis();
                             String type = mManifest.get(i++);
                             GisType gf = new GisType();
-                            gisTypeL.add(gf.strip(geoJ).parse(type));
+                            gisTypeL.add(gf.strip(geoJ).stringify().parse(type));
                             long diff = (System.currentTimeMillis()-t1);
-                            mLoadLog.getValue().add("Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
+                            Logger.gl().d("PARSE","Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
-                    Log.d("v","DELETE ALL CALLED");
-                    mLoadLog.getValue().add("Deleting");
+                    Logger.gl().d("INSERT","DELETE ALL CALLED");
                     mRepository.deleteAll();
                     for (GisType gisType : gisTypeL) {
                         long t1 = System.currentTimeMillis();
@@ -65,31 +68,69 @@ public class WorldViewModel extends AndroidViewModel {
                         for (GisObject g:geo)
                             mRepository.insert(g);
                         long diff = (System.currentTimeMillis()-t1);
-                        mLoadLog.getValue().add("Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
-
-                        mLoadLog.postValue(mLoadLog.getValue());
-
+                        Logger.gl().d("INSERT","Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
                     }
-                    mLoadLog.getValue().add("DONE.");
-
+                    Logger.gl().d("INSERT","DONE.");
+                    mLoadLog.postValue(Logger.gl());
                 }
-            },mLoadLog,mManifest,app,geoJsonFiles);
+            },mManifest,app,geoJsonFiles);
         },app);
-        Loader.getSpinners(spinnerF -> {
-            mLoadLog.getValue().add("[Spinners loaded.]");
-            try {
-            Spinners sp = new Spinners().strip(spinnerF).parse();
-                Log.d("SPIN",sp.toString());
-            } catch (Exception e) {
-                e.printStackTrace();
+        String module = app.substring(0, 1).toUpperCase() + app.substring(1)+".xml";
+        Logger.gl().d("PARSE","App Name: "+module);
+        Loader.getModule(moduleFile -> {
+            if (moduleFile != null) {
+                Logger.gl().d("LOAD", "[Bundle loaded.]");
+                try {
+                    Log.d("WORK",moduleFile.toString());
+                    new WorkflowBundle().stringify(moduleFile).parse();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-        },app);
+        }, app, module);
+
+        Loader.getModule(moduleFile -> {
+            if (moduleFile != null) {
+                Logger.gl().d("LOAD", "[Spinners loaded.]");
+                try {
+                    new Spinners().strip(moduleFile).parse();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, app, "Spinners.csv");
+
+        Loader.getModule(configF -> {
+            if (configF != null) {
+                Logger.gl().d("LOAD", "[Configs loaded.]");
+                try {
+                    Loader.getModule(variableF -> {
+                        if (variableF != null) {
+                            Logger.gl().d("LOAD", "[Variables loaded.]");
+                            try {
+                                new VariablesConfiguration().strip(variableF).parse(
+                                        new GroupsConfiguration().strip(configF).parse()
+                                );
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        } else
+                            Logger.gl().e("LOAD", "GroupsConfiguration missing");
+                    }, app,"Variables.csv");
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else
+                Logger.gl().e("LOAD", "GroupsConfiguration missing");
+        }, app, "Groups.csv");
+
 
     }
 
     public LiveData<List<VariableTable>> getAllVariables() { return mVariables; }
     public List<String> getManifest(){ return mManifest; }
     public void insert(VariableTable variable) { mRepository.insert(variable); }
-    public LiveData<List<String>> getLoadProgress() { return mLoadLog; }
+    public LiveData<Logger> getLoadProgress() { if (mLoadLog == null) { mLoadLog = new MutableLiveData<Logger>(Logger.gl()); } return mLoadLog;}
 
 }

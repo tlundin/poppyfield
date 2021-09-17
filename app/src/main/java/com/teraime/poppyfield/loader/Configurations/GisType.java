@@ -1,16 +1,16 @@
-package com.teraime.poppyfield.gis;
+package com.teraime.poppyfield.loader.Configurations;
 
 import android.util.JsonReader;
 
-import com.teraime.poppyfield.base.Config;
-import com.teraime.poppyfield.parsers.GeoJsonParser;
+import com.teraime.poppyfield.gis.GisObject;
+import com.teraime.poppyfield.loader.parsers.GeoJsonParser;
 
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
 public class GisType extends Config<GisType> {
-    String version,type,rawGeoData;
+    String type,rawGeoData;
     private List<GisObject> geoObjs;
 
     public GisType stringify() {
@@ -37,7 +37,5 @@ public class GisType extends Config<GisType> {
         return type;
     }
 
-    public String getVersion() {
-        return version;
-    }
+
 }

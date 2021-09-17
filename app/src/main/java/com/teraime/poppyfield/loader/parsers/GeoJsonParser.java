@@ -1,14 +1,15 @@
-package com.teraime.poppyfield.parsers;
+package com.teraime.poppyfield.loader.parsers;
 import android.util.JsonReader;
 import android.util.JsonToken;
-import android.util.Log;
 import android.util.MalformedJsonException;
+
+import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.gis.Location;
 import com.teraime.poppyfield.gis.GisPolygonObject;
 import com.teraime.poppyfield.gis.SweLocation;
-import com.teraime.poppyfield.loader.NamedVariables;
+import com.teraime.poppyfield.base.NamedVariables;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -169,7 +170,7 @@ public class GeoJsonParser {
                                                 reader.endArray();
                                             break;
                                         default:
-                                            Log.e("vortex", "in default...not good: " + reader.peek() + "::::" + reader.toString());
+                                            Logger.gl().e("vortex", "in default...not good: " + reader.peek() + "::::" + reader.toString());
                                             List<String> skippies = new ArrayList<>();
                                             while (reader.hasNext()) {
                                                 String skipped = getAttribute(reader);
@@ -177,9 +178,9 @@ public class GeoJsonParser {
                                                     skippies.add(skipped);
                                             }
                                             if (skippies.size() > 0) {
-                                                Log.e("vortex", "Skipped " + skippies.size() + " attributes for " + type + ":");
+                                                Logger.gl().e("vortex", "Skipped " + skippies.size() + " attributes for " + type + ":");
                                                 for (String skip : skippies)
-                                                    Log.e("vortex", skip);
+                                                    Logger.gl().e("vortex", skip);
                                             }
                                             break;
                                     }
@@ -191,7 +192,7 @@ public class GeoJsonParser {
                                         if (myCoordinates != null && !myCoordinates.isEmpty())
                                             myGisObjects.add(new GisObject(keyChain, myCoordinates, attributes));
                                         else
-                                            Log.e("vortex", "No coordinates for multipoint in " + type + "!");
+                                            Logger.gl().e("vortex", "No coordinates for multipoint in " + type + "!");
                                         break;
 
                                     case GisConstants.POLYGON:
@@ -209,7 +210,7 @@ public class GeoJsonParser {
                    // throw new MalformedJsonException("Parse error when parsing geojson type " + type + ". Expected Object type at " + reader.toString() + " peek: " + reader.peek());
 
             } catch(MalformedJsonException je){
-                Log.e("vortex", je.getMessage());
+                Logger.gl().e("vortex", je.getMessage());
             }
 
         reader.close();

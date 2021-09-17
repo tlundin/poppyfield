@@ -1,4 +1,4 @@
-package com.teraime.poppyfield.loader;
+package com.teraime.poppyfield.base;
 
 public class NamedVariables {
 	//LINJEOBJEKT SOM OMNÄMNS
