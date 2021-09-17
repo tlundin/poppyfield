@@ -1,21 +1,26 @@
 package com.teraime.poppyfield.gis;
 
 import android.util.JsonReader;
-import android.util.Log;
 
 import com.teraime.poppyfield.base.Config;
-import com.teraime.poppyfield.loader.GeoJsonParser;
+import com.teraime.poppyfield.parsers.GeoJsonParser;
 
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
-public class GisType extends Config {
-    String rawGeoData;
-    String version,type;
+public class GisType extends Config<GisType> {
+    String version,type,rawGeoData;
     private List<GisObject> geoObjs;
 
-    public GisType()  {
+    public GisType stringify() {
+        StringBuilder sb=new StringBuilder();
+        for(String s:rawData) {
+            sb.append(s);
+            sb.append("\n");
+        }
+        rawGeoData=sb.toString();
+        return this;
     }
 
     public GisType parse(String type) throws IOException {

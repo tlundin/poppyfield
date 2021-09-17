@@ -1,4 +1,4 @@
-package com.teraime.poppyfield.loader;
+package com.teraime.poppyfield.parsers;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
@@ -8,6 +8,8 @@ import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.gis.Location;
 import com.teraime.poppyfield.gis.GisPolygonObject;
 import com.teraime.poppyfield.gis.SweLocation;
+import com.teraime.poppyfield.loader.NamedVariables;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;

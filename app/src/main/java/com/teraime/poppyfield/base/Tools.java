@@ -1,0 +1,42 @@
+package com.teraime.poppyfield.base;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Tools {
+
+    public static String[] split(String input) {
+        List<String> result = new ArrayList<>();
+        int start = 0;
+        boolean inQuotes = false;
+        for (int current = 0; current < input.length(); current++) {
+            if (input.charAt(current) == '\"') inQuotes = !inQuotes; // toggle state
+            boolean atLastChar = (current == input.length() - 1);
+            if(atLastChar) {
+                if (input.charAt(current) == ',') {
+                    if (start==current)
+                        result.add("");
+                    else
+                        result.add(input.substring(start,current));
+                    result.add("");
+                } else {
+                    //Log.d("nils","Last char: "+input.charAt(current));
+                    result.add(input.substring(start));
+                }
+            }
+            else if (input.charAt(current) == ',' && !inQuotes) {
+                String toAdd = input.substring(start, current);
+                //Log.d("Adding",toAdd);
+
+                result.add(toAdd);
+                start = current + 1;
+            }
+        }
+        if (result.size()==0)
+            return new String[]{input};
+        else
+            return result.toArray(new String[0]);
+
+    }
+
+}

@@ -22,8 +22,8 @@ import java.util.List;
 
 public class WorldViewModel extends AndroidViewModel {
 
-    private FieldPadRepository mRepository;
-    private MutableLiveData<List<String>> mLoadLog = new MutableLiveData<>();
+    private final FieldPadRepository mRepository;
+    private final MutableLiveData<List<String>> mLoadLog = new MutableLiveData<>();
     private List<String> mManifest;
     private final LiveData<List<VariableTable>> mVariables;
 
@@ -31,61 +31,57 @@ public class WorldViewModel extends AndroidViewModel {
         super(application);
         mRepository = new FieldPadRepository(application);
         mVariables = mRepository.getTimeOrderedList();
-        mLoadLog.setValue(new ArrayList<String>());
+        mLoadLog.setValue(new ArrayList<>());
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
         //Load manifest
         String app=prefs.getString("App","smabio");
         List<List<String>> geoJsonFiles = new ArrayList<>();
-        Loader.getManifest(new LoaderCb() {
-            @Override
-            public void loaded(List<String> fileList) {
-                mManifest = (List<String>)fileList;
-                Loader.loadAllFiles(new LoaderCb() {
-                    @Override
-                    public void loaded(List<String> _d) {
-                        //Log.d("vortex",geoJsonFiles.get(0).toString());
-                        int i=0;
-                        List<GisType> gisTypeL = new ArrayList<>();
-                        for (List<String>geoJ:geoJsonFiles) {
-                            try {
-                                long t1 = System.currentTimeMillis();
-                                String type = mManifest.get(i++);
-                                GisType gf = new GisType();
-                                gisTypeL.add(gf.strip(geoJ).parse(type));
-                                long diff = (System.currentTimeMillis()-t1);
-                                mLoadLog.getValue().add("Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        Log.d("v","DELETE ALL CALLED");
-                        mLoadLog.getValue().add("Deleting");
-                        mRepository.deleteAll();
-                        for (GisType gisType : gisTypeL) {
+        Loader.getManifest(fileList -> {
+            mManifest = (List<String>)fileList;
+            Loader.loadAllFiles(new LoaderCb() {
+                @Override
+                public void loaded(List<String> _d) {
+                    int i=0;
+                    List<GisType> gisTypeL = new ArrayList<>();
+                    for (List<String>geoJ:geoJsonFiles) {
+                        try {
                             long t1 = System.currentTimeMillis();
-                            List<GisObject> geo = gisType.getGeoObjects();
-                            for (GisObject g:geo)
-                                mRepository.insert(g);
+                            String type = mManifest.get(i++);
+                            GisType gf = new GisType();
+                            gisTypeL.add(gf.strip(geoJ).parse(type));
                             long diff = (System.currentTimeMillis()-t1);
-                            mLoadLog.getValue().add("Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
-
-                            mLoadLog.postValue(mLoadLog.getValue());
-
+                            mLoadLog.getValue().add("Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                        mLoadLog.getValue().add("DONE.");
+                    }
+                    Log.d("v","DELETE ALL CALLED");
+                    mLoadLog.getValue().add("Deleting");
+                    mRepository.deleteAll();
+                    for (GisType gisType : gisTypeL) {
+                        long t1 = System.currentTimeMillis();
+                        List<GisObject> geo = gisType.getGeoObjects();
+                        for (GisObject g:geo)
+                            mRepository.insert(g);
+                        long diff = (System.currentTimeMillis()-t1);
+                        mLoadLog.getValue().add("Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
+
+                        mLoadLog.postValue(mLoadLog.getValue());
 
                     }
-                },mLoadLog,mManifest,app,geoJsonFiles);
-            }
+                    mLoadLog.getValue().add("DONE.");
+
+                }
+            },mLoadLog,mManifest,app,geoJsonFiles);
         },app);
-        Loader.getSpinners(new LoaderCb() {
-            @Override
-            public void loaded(List<String> spinnerF) {
-                mLoadLog.getValue().add("[Spinners loaded.]");
-                Log.d("SPIN","Spinners loaded");
-                Spinners sp = new Spinners();
-                sp.strip(spinnerF).parse("spinner");
+        Loader.getSpinners(spinnerF -> {
+            mLoadLog.getValue().add("[Spinners loaded.]");
+            try {
+            Spinners sp = new Spinners().strip(spinnerF).parse();
+                Log.d("SPIN",sp.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         },app);
 

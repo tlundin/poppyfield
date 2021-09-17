@@ -1,25 +1,16 @@
 package com.teraime.poppyfield.base;
 
-import com.teraime.poppyfield.gis.GisType;
-
-import java.io.IOException;
 import java.util.List;
 
-public abstract class Config {
+public class Config<T> {
 
     String version;
-    String rawData;
+    protected List<String> rawData;
 
-    public Config strip(List<String> x) {
+    public T strip(List<String> x) {
         this.version = x.remove(0).split(",")[1].trim();
-        StringBuilder sb=new StringBuilder();
-        for(String s:x) {
-            sb.append(s);
-            sb.append("\n");
-        }
-        rawData=sb.toString();
-        return this;
+        rawData=x;
+        return (T)this;
     }
 
-    public abstract Config parse(String type) throws IOException;
 }
