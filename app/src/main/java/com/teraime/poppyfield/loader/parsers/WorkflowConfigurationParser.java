@@ -23,22 +23,23 @@ public class WorkflowConfigurationParser {
     private static String language="se";
 
     public static class WorkFlowBundleDescriptor {
-        public String appVersion;
+        public String appVersion="";
         //workflows will be added to this one.
-        public List<Workflow> bundle = new ArrayList<Workflow>();
+        public List<Workflow> bundle = new ArrayList<>();
     }
 
     public static WorkFlowBundleDescriptor parse(XmlPullParser parser) throws XmlPullParserException, IOException, ParseException {
         String imageMetaFormat;
         String myApplication;
-        WorkFlowBundleDescriptor wfD = new WorkFlowBundleDescriptor();
         parser.nextTag();
         parser.require(XmlPullParser.START_TAG, null, "bundle");
         myApplication = parser.getAttributeValue(null, "application");
-        float appVersion=-1,newWorkflowVersion = -1;
+        WorkFlowBundleDescriptor wd = new WorkFlowBundleDescriptor();
+        float newWorkflowVersion = -1;
+
         try {
             newWorkflowVersion = Float.parseFloat(parser.getAttributeValue(null, "version"));
-            wfD.appVersion = parser.getAttributeValue(null, "app_version");
+            wd.appVersion = parser.getAttributeValue(null, "app_version");
         }
         catch (Exception e) {
             Logger.gl().e("PARSE", "WorkflowBundle:No app version, or no workflowversion.");
@@ -61,17 +62,18 @@ public class WorkflowConfigurationParser {
             }
             else if (name.equals("workflow")) {
                 //Add workflow to bundle, return a count.
-                wfD.bundle.add(readWorkflow(myApplication, parser));
+                wd.bundle.add(readWorkflow(myApplication, parser));
 
             } else {
                 skip(name,parser);
             }
         }
-        return wfD;
+        return wd;
     }
+
     private static Workflow readWorkflow(String myApplication, XmlPullParser parser) throws XmlPullParserException, IOException {
 
-        Workflow wf = new Workflow(myApplication);
+        Workflow wf = new Workflow();
         parser.require(XmlPullParser.START_TAG, null, "workflow");
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -79,13 +81,11 @@ public class WorkflowConfigurationParser {
             }
 
             String name = parser.getName();
-            if (name.equals("blocks")) {
-                wf.addBlocks(readBlocks(parser));
-            } else {
+            if (name.equals("blocks")) wf.addBlocks(readBlocks(parser));
+            else {
                 skip(name,parser);
             }
         }
-
         return wf;
 
 
@@ -122,7 +122,7 @@ public class WorkflowConfigurationParser {
 
 
     private static Block createBlock(String blockName, XmlPullParser parser) throws IOException, XmlPullParserException {
-        //o.addRow("Parsing block: block_start...");
+        Log.d("v","Creating block "+blockName);
         Map<String,String> attrs = new HashMap<>();
         String workflowName=null; String args[]=null,context=null,id=null;
         parser.require(XmlPullParser.START_TAG, null,blockName);

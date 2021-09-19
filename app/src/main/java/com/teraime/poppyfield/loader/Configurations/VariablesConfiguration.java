@@ -13,4 +13,8 @@ public class VariablesConfiguration extends Config<VariablesConfiguration> {
         return this;
     }
 
+    public Table getTable() {
+        return t;
+    }
+
 }

@@ -2,6 +2,7 @@ package com.teraime.poppyfield.loader.Configurations;
 
 import android.util.Xml;
 
+import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.loader.parsers.WorkflowConfigurationParser;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -25,6 +26,14 @@ public class WorkflowBundle extends Config<WorkflowBundle> {
         }
         sData=sb.toString();
         return this;
+    }
+
+    public List<Workflow> getWfs() {
+        return wd.bundle;
+    }
+
+    public Workflow getMainWf() {
+        return wd.bundle.get(0);
     }
 
     public WorkflowBundle parse() throws XmlPullParserException, IOException, ParseException {

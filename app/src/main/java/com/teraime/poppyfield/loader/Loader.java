@@ -1,87 +1,146 @@
 package com.teraime.poppyfield.loader;
 
-import android.os.AsyncTask;
+import android.content.res.Configuration;
+import android.util.Log;
+
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 
 import com.teraime.poppyfield.base.Logger;
-import com.teraime.poppyfield.base.S;
+import com.teraime.poppyfield.base.Spinners;
+import com.teraime.poppyfield.base.Table;
+import com.teraime.poppyfield.gis.GisObject;
+import com.teraime.poppyfield.loader.Configurations.Config;
+import com.teraime.poppyfield.loader.Configurations.GisType;
+import com.teraime.poppyfield.loader.Configurations.GroupsConfiguration;
+import com.teraime.poppyfield.loader.Configurations.VariablesConfiguration;
+import com.teraime.poppyfield.loader.Configurations.WorkflowBundle;
+import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Loader  {
+public class Loader {
 
-    static String protocol = "http://";
+    private static Loader instance=null;
+    private List<Config> mConfigs = new ArrayList();
+    private WorkflowBundle wf;
+    private Spinners spinners;
+    private Table t;
 
-    
-    public static void getManifest(LoaderCb callback, String app) {
-        String Manifest = "content.txt";
-        String url = S.SERVER + "/" + app + "/gis_objects/";
-        new DownloadFileTask(callback).execute(protocol+ url + Manifest);
+    public static Loader getInstance() {
+        if (instance == null)
+            instance = new Loader();
+        return instance;
     }
-    public static void getModule(LoaderCb callback, String app, String module) {
-        String url = S.SERVER + "/" + app + "/";
-        new DownloadFileTask(callback).execute(protocol+ url + module);
+
+    public List<Config> getConfigs() {
+        return mConfigs;
     }
 
-    public static void loadGisModules(LoaderCb loaderCb, List<String> mManifest, String app, List<List<String>> files) {
-        String url = "www.teraim.com/"+app+"/gis_objects/";
-        for (String gisFile:mManifest) {
-            new DownloadFileTask(file -> {
-                Logger.gl().d("LOAD",gisFile);
-                files.add(file);
-                if (files.size()==mManifest.size())
-                    loaderCb.loaded(null);
-            }).execute(protocol+ url + gisFile + ".json");
-        }
-    }
-    
-    private static class DownloadFileTask extends AsyncTask<String, Void, List<String>> {
-        final LoaderCb cb;
+    public void load(String app, WorldViewModel v) {
+        List<List<String>> geoJsonFiles = new ArrayList<>();
 
-        DownloadFileTask(LoaderCb cb) {
-            this.cb=cb;
-        }
+        WebLoader.getManifest(fileList -> {
+            List<String> mManifest = (List<String>) fileList;
+            WebLoader.loadGisModules(new LoaderCb() {
+                @Override
+                public void loaded(List<String> _d) {
+                    int i=0;
+                    List<GisType> gisTypeL = new ArrayList<>();
+                    for (List<String>geoJ:geoJsonFiles) {
+                        try {
+                            long t1 = System.currentTimeMillis();
+                            String type = mManifest.get(i++);
+                            GisType gf = new GisType();
+                            gisTypeL.add(gf.strip(geoJ).stringify().parse(type));
+                            long diff = (System.currentTimeMillis()-t1);
+                            Logger.gl().d("PARSE","Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    Logger.gl().d("INSERT","DELETE ALL CALLED");
+                    v.deleteAllGisObjects();
+                    for (GisType gisType : gisTypeL) {
+                        long t1 = System.currentTimeMillis();
+                        List<GisObject> geo = gisType.getGeoObjects();
+                        for (GisObject g:geo)
+                            v.insertGisObject(g);
+                        long diff = (System.currentTimeMillis()-t1);
+                        Logger.gl().d("INSERT","Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
+                    }
+                    Logger.gl().d("INSERT","DONE.");
 
-        protected List<String> doInBackground(String... url) {
-            String inputLine;
-            URL website=null;
-            BufferedReader in;
-            List<String> file = null;
-            try {
-                website = new URL(url[0]);
-                Logger.gl().d("URL",website.toString());
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
-            try {
-                assert website != null;
-                URLConnection ucon = website.openConnection();
-                ucon.setConnectTimeout(5000);
-                in = new BufferedReader(new InputStreamReader(ucon.getInputStream()));
-
-                while ((inputLine = in.readLine()) != null) {
-                    if (file==null)
-                        file = new ArrayList<>();
-                    file.add(inputLine);
                 }
-                in.close();
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                file = null;
+            },mManifest,app,geoJsonFiles);
+        },app);
+        String module = app.substring(0, 1).toUpperCase() + app.substring(1)+".xml";
+        Logger.gl().d("PARSE","App Name: "+module);
+        WebLoader.getModule(moduleFile -> {
+            if (moduleFile != null) {
+                Logger.gl().d("LOAD", "[Bundle loaded.]");
+                try {
+                    Log.d("WORK",moduleFile.toString());
+                    wf = new WorkflowBundle().stringify(moduleFile).parse();
+                    mConfigs.add(wf);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-            return file;
-        }
+        }, app, module);
 
-        protected void onPostExecute(List<String> file) {
-            cb.loaded(file);
-        }
+        WebLoader.getModule(moduleFile -> {
+            if (moduleFile != null) {
+                Logger.gl().d("LOAD", "[Spinners loaded.]");
+                try {
+                    spinners = new Spinners().strip(moduleFile).parse();
+                    mConfigs.add(spinners);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, app, "Spinners.csv");
 
+        WebLoader.getModule(configF -> {
+            if (configF != null) {
+                Logger.gl().d("LOAD", "[Configs loaded.]");
+                try {
+                    WebLoader.getModule(variableF -> {
+                        if (variableF != null) {
+                            Logger.gl().d("LOAD", "[Variables loaded.]");
 
+                            try {
+                                GroupsConfiguration gc = new GroupsConfiguration().strip(configF).parse();
+                                VariablesConfiguration vc = new VariablesConfiguration().strip(variableF).parse(gc);
+                                mConfigs.add(gc);
+                                mConfigs.add(vc);
+                                t = vc.getTable();
+                                ((MutableLiveData)v.getMyConf()).setValue(mConfigs);
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        } else
+                            Logger.gl().e("LOAD", "GroupsConfiguration missing");
+                    }, app,"Variables.csv");
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else
+                Logger.gl().e("LOAD", "GroupsConfiguration missing");
+        }, app, "Groups.csv");
     }
+
+    public WorkflowBundle getBundle() {
+        return wf;
+    }
+    public Spinners getSpinners() {
+        return spinners;
+    }
+    public Table getTable() {
+        return t;
+    }
+
 }

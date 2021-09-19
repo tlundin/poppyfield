@@ -8,7 +8,9 @@ import androidx.lifecycle.LiveData;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
+import com.teraime.poppyfield.loader.Loader;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,7 +64,7 @@ public class FieldPadRepository {
     Map<String,String> map = new HashMap<>();
 
 
-    public void insert(GisObject g) {
+    public void insertGisObject(GisObject g) {
         Map<String,String> am = new HashMap<>();
         String var=GisConstants.GPS_Coord_Var_Name,value=g.coordsToString(),year="H";
         String colName;
@@ -95,4 +97,5 @@ public class FieldPadRepository {
             mVDao.deleteAll();
         });
     }
+
 }
