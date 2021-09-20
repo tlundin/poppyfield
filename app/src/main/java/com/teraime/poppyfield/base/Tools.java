@@ -1,9 +1,19 @@
 package com.teraime.poppyfield.base;
 
+import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Tools {
+
+    public static Fragment createFragment(String templateName) throws ClassNotFoundException {
+        Fragment f = null;
+        try {
+            Class<?> cs = Class.forName(Constants.JAVA_APP_NAME+".templates."+templateName);
+            f = (Fragment)cs.newInstance();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) { throw new ClassNotFoundException("Failed to create Fragment "+templateName); }
+        return f;
+    }
 
     public static String[] split(String input) {
         List<String> result = new ArrayList<>();

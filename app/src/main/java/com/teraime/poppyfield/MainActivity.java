@@ -1,5 +1,5 @@
 package com.teraime.poppyfield;
-
+import android.app.FragmentManager;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.SpannableString;
@@ -17,6 +17,8 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -24,57 +26,42 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
+import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Loader;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
     MenuDescriptor menuDescriptor = null;
+    Fragment logTVF;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout);
-        WorldViewModel model = new ViewModelProvider(this).get(WorldViewModel.class);
-        final TextView logTV = this.findViewById(R.id.log);
+        try {
+            logTVF = Tools.createFragment("LogScreen");
+            setContentView(logTVF, "Startup");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        final WorldViewModel model = new ViewModelProvider(this).get(WorldViewModel.class);
+
         final MaterialToolbar topAppBar = this.findViewById(R.id.topAppBar);
-        logTV.setMovementMethod(new ScrollingMovementMethod());
+
         final DrawerLayout drawerLayout = findViewById(R.id.drawerLayout);
         final NavigationView navi = findViewById(R.id.nav);
         navi.setItemIconTintList(null);
         setSupportActionBar(topAppBar);
-        // Create the observer which updates the UI.
-        final Observer<List<Config<?>>> loadObserver = configs -> {
-            SpannableStringBuilder builder = new SpannableStringBuilder();
-            // Update the UI
-            Map<String, List<String>> log = Logger.gl().debug();
-            for (String k : log.keySet()) {
-                SpannableString sp = new SpannableString("\n" + k);
-                sp.setSpan(new ForegroundColorSpan(ContextCompat.getColor(getApplicationContext(), (k.equals("FAILURES")) ? R.color.crimson : R.color.limegreen)
-                ), 0, sp.length(), 0);
-                sp.setSpan(new StyleSpan(Typeface.BOLD), 0, sp.length(), 0);
-                builder.append(sp);
-                List<String> l = log.get(k);
-                if (l != null) {
-                    for (String s : l)
-                        builder.append("\n ").append(s);
-                }
-            }
-            logTV.setText(builder, TextView.BufferType.SPANNABLE);
-            if (configs.size() == 4) {
-                Logger.gl().d("LOADER", "DONE");
-                populateMenu(navi.getMenu());
-            }
 
-        };
+        //populateMenu(navi.getMenu(),model);
 
-        model.getMyConf().observe(this,
-                loadObserver);
         topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -86,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void populateMenu(Menu menu) {
+    private void populateMenu(Menu menu, WorldViewModel model) {
     Workflow main = Loader.getInstance().getBundle().getMainWf();
     menuDescriptor = new MenuDescriptor(main.getBlocks());
 
@@ -108,6 +95,21 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("VOOF",elem.get("target"));
                     Workflow wf = Loader.getInstance().getBundle().getWf(elem.get("target"));
                     Log.d("v","WF has"+wf.getBlocks().size()+" blocks");
+                    String template="NONE";
+                    try {
+                        template = wf.getTemplate();
+                    } catch (ParseException pe) {
+                        Logger.gl().d("RUNTIME","Cannot open the workflow "+wf.getName()+". Missing type argument in PageDefine block");
+                    }
+                    Log.d("v","Template "+template);
+                    model.setSelectedWorkFlow(wf);
+                    try {
+                        Fragment templateF = Tools.createFragment(template);
+                        setContentView(templateF,wf.getName());
+
+                    } catch (ClassNotFoundException e) {
+                        Logger.gl().e(e.getMessage());
+                    }
                     return true;
                 });
             }
@@ -116,6 +118,15 @@ public class MainActivity extends AppCompatActivity {
     }
 }
 
+    private void setContentView(Fragment templateF, String name) {
+        FragmentManager fragmentManager = getFragmentManager();
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft
+                .replace(R.id.content_frame, templateF)
+                .addToBackStack("DummyValue")
+                .commit();
+        setTitle(name);
+    }
 
 
 }

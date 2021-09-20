@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Loader;
@@ -22,6 +23,7 @@ public class WorldViewModel extends AndroidViewModel {
     private final LiveData<List<Config<?>>> myConf;
     private List<String> mManifest;
     private final LiveData<List<VariableTable>> mVariables;
+    private Workflow mWorkflow;
 
     public WorldViewModel(Application application) {
         super(application);
@@ -35,6 +37,8 @@ public class WorldViewModel extends AndroidViewModel {
 
 
     public List<String> getManifest(){ return mManifest; }
+    public Workflow getSelectedWorkFlow() { return mWorkflow; }
+    public void setSelectedWorkFlow(Workflow wf) { mWorkflow = wf; }
     //Livedata
     public LiveData<List<VariableTable>> getAllVariables() { return mVariables; }
     public LiveData<List<Config<?>>> getMyConf() { return myConf; }
@@ -49,5 +53,7 @@ public class WorldViewModel extends AndroidViewModel {
         mRepository.insertGisObject(gi);
     }
     public void insert(VariableTable variable) { mRepository.insert(variable); }
+
+
 
 }
