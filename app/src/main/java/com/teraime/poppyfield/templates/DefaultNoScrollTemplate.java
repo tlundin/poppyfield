@@ -26,7 +26,7 @@ public class DefaultNoScrollTemplate extends Fragment {
 	@Override
 	public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 		Log.d("vo", "GETZ");
-		WorldViewModel model = new ViewModelProvider(this).get(WorldViewModel.class);
+		WorldViewModel model = new ViewModelProvider(requireActivity()).get(WorldViewModel.class);
 		WFRunner.getVisiBlocks(model.getSelectedWorkFlow());
 		if (view == null) {
 			view = inflater.inflate(R.layout.template_wf_default_no_scroll, container, false);
