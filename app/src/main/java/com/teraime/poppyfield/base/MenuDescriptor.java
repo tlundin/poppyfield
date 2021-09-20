@@ -6,23 +6,20 @@ import com.teraime.poppyfield.base.Block;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 public class MenuDescriptor {
 
-    private final MenuItem base;
     List<MenuItem> mMenu;
 
     public class MenuItem {
         public Map<String, String> mAttrs;
         public List<Map<String, String>> mElems;
-
         public void addHeader(Block b) {
-            if (b!=null)
                 mAttrs = b.getAttrs();
-
-            mElems = new ArrayList<>();
+            mElems = new LinkedList<>();
         }
         public void addEntry(Block b) {
             mElems.add(b.getAttrs());
@@ -33,20 +30,23 @@ public class MenuDescriptor {
         return mMenu;
     }
     public MenuDescriptor(List<Block> menuBlocks) {
-        mMenu = new ArrayList<>();
-        base = new MenuItem();
-        base.addHeader(null);
-        mMenu.add(base);
-        MenuItem currGroup = base;
+        mMenu = new LinkedList<>();
+        MenuItem rootM = new MenuItem();
+        rootM.mElems = new LinkedList<>();
+        mMenu.add(rootM);
+        MenuItem currGroup = rootM;
+
         for (Block b:menuBlocks) {
+
             switch (b.getBlockType()) {
-                case "block_define_menu_entry":
-                    currGroup.addEntry(b);
-                    break;
                 case "block_define_menu_header":
                     MenuItem mi = new MenuItem();
                     mi.addHeader(b);
                     currGroup=mi;
+                    mMenu.add(mi);
+                    break;
+                case "block_define_menu_entry":
+                    currGroup.addEntry(b);
                     break;
 
             }

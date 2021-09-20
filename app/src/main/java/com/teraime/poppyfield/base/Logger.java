@@ -26,10 +26,10 @@ public class Logger {
     }
 
 
-    public void e(String header, String msg) {
-        debugLog.computeIfAbsent(header, k -> new LinkedList<>());
+    public void e(String msg) {
+        debugLog.computeIfAbsent("FAILURES", k -> new LinkedList<>());
         Objects.requireNonNull(debugLog.get("FAILURES")).add(msg);
-        Log.e(header,msg);
+        Log.e("FAILURES",msg);
     }
 
 

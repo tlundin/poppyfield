@@ -1,10 +1,8 @@
 package com.teraime.poppyfield.loader;
 
-import android.content.res.Configuration;
 import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.Spinners;
@@ -23,7 +21,7 @@ import java.util.List;
 public class Loader {
 
     private static Loader instance=null;
-    private List<Config> mConfigs = new ArrayList();
+    private final List<Config<?>> mConfigs = new ArrayList<>();
     private WorkflowBundle wf;
     private Spinners spinners;
     private Table t;
@@ -34,7 +32,7 @@ public class Loader {
         return instance;
     }
 
-    public List<Config> getConfigs() {
+    public List<Config<?>> getConfigs() {
         return mConfigs;
     }
 
@@ -42,38 +40,35 @@ public class Loader {
         List<List<String>> geoJsonFiles = new ArrayList<>();
 
         WebLoader.getManifest(fileList -> {
-            List<String> mManifest = (List<String>) fileList;
-            WebLoader.loadGisModules(new LoaderCb() {
-                @Override
-                public void loaded(List<String> _d) {
-                    int i=0;
-                    List<GisType> gisTypeL = new ArrayList<>();
-                    for (List<String>geoJ:geoJsonFiles) {
-                        try {
-                            long t1 = System.currentTimeMillis();
-                            String type = mManifest.get(i++);
-                            GisType gf = new GisType();
-                            gisTypeL.add(gf.strip(geoJ).stringify().parse(type));
-                            long diff = (System.currentTimeMillis()-t1);
-                            Logger.gl().d("PARSE","Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    Logger.gl().d("INSERT","DELETE ALL CALLED");
-                    v.deleteAllGisObjects();
-                    for (GisType gisType : gisTypeL) {
+            //List<String> mManifest = (List<String>) fileList;
+            WebLoader.loadGisModules(_d -> {
+                int i=0;
+                List<GisType> gisTypeL = new ArrayList<>();
+                for (List<String>geoJ:geoJsonFiles) {
+                    try {
                         long t1 = System.currentTimeMillis();
-                        List<GisObject> geo = gisType.getGeoObjects();
-                        for (GisObject g:geo)
-                            v.insertGisObject(g);
+                        String type = fileList.get(i++);
+                        GisType gf = new GisType();
+                        gisTypeL.add(gf.strip(geoJ).stringify().parse(type));
                         long diff = (System.currentTimeMillis()-t1);
-                        Logger.gl().d("INSERT","Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
+                        Logger.gl().d("PARSE","Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    Logger.gl().d("INSERT","DONE.");
-
                 }
-            },mManifest,app,geoJsonFiles);
+                Logger.gl().d("INSERT","DELETE ALL CALLED");
+                v.deleteAllGisObjects();
+                for (GisType gisType : gisTypeL) {
+                    long t1 = System.currentTimeMillis();
+                    List<GisObject> geo = gisType.getGeoObjects();
+                    for (GisObject g:geo)
+                        v.insertGisObject(g);
+                    long diff = (System.currentTimeMillis()-t1);
+                    Logger.gl().d("INSERT","Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
+                }
+                Logger.gl().d("INSERT","DONE.");
+
+            },fileList,app,geoJsonFiles);
         },app);
         String module = app.substring(0, 1).toUpperCase() + app.substring(1)+".xml";
         Logger.gl().d("PARSE","App Name: "+module);
@@ -122,14 +117,14 @@ public class Loader {
                                 e.printStackTrace();
                             }
                         } else
-                            Logger.gl().e("LOAD", "GroupsConfiguration missing");
+                            Logger.gl().e("GroupsConfiguration missing");
                     }, app,"Variables.csv");
 
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             } else
-                Logger.gl().e("LOAD", "GroupsConfiguration missing");
+                Logger.gl().e("GroupsConfiguration missing");
         }, app, "Groups.csv");
     }
 

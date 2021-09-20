@@ -1,7 +1,5 @@
 package com.teraime.poppyfield;
 
-import static android.view.Menu.NONE;
-
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.SpannableString;
@@ -10,8 +8,9 @@ import android.text.method.ScrollingMovementMethod;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
-import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
@@ -21,7 +20,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
 import com.teraime.poppyfield.base.Logger;
@@ -41,14 +39,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_layout);
         WorldViewModel model = new ViewModelProvider(this).get(WorldViewModel.class);
         final TextView logTV = this.findViewById(R.id.log);
         final MaterialToolbar topAppBar = this.findViewById(R.id.topAppBar);
-        final DrawerLayout drawerLayout = (DrawerLayout) getLayoutInflater().inflate(R.id.drawerLayout);
         logTV.setMovementMethod(new ScrollingMovementMethod());
+        final DrawerLayout drawerLayout = findViewById(R.id.drawerLayout);
+        final NavigationView navi = findViewById(R.id.nav);
+        navi.setItemIconTintList(null);
+        setSupportActionBar(topAppBar);
         // Create the observer which updates the UI.
-        final Observer<List<Config>> loadObserver = configs -> {
+        final Observer<List<Config<?>>> loadObserver = configs -> {
             SpannableStringBuilder builder = new SpannableStringBuilder();
             // Update the UI
             Map<String, List<String>> log = Logger.gl().debug();
@@ -67,9 +68,7 @@ public class MainActivity extends AppCompatActivity {
             logTV.setText(builder, TextView.BufferType.SPANNABLE);
             if (configs.size() == 4) {
                 Logger.gl().d("LOADER", "DONE");
-                Workflow main = Loader.getInstance().getBundle().getMainWf();
-                menuDescriptor = new MenuDescriptor(main.getBlocks());
-
+                populateMenu(navi.getMenu());
             }
 
         };
@@ -79,41 +78,44 @@ public class MainActivity extends AppCompatActivity {
         topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                drawerLayout.open();
+                drawerLayout.openDrawer(Gravity.LEFT);
             }
         });
 
 
-        navigationView.setNavigationItemSelectedListener { menuItem ->
-                // Handle menu item selected
-                menuItem.isChecked = true;
-            drawerLayout.close();
-        }
     }
 
 
+    private void populateMenu(Menu menu) {
+    Workflow main = Loader.getInstance().getBundle().getMainWf();
+    menuDescriptor = new MenuDescriptor(main.getBlocks());
 
-
-/*
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        Log.d("v","gets");
-        if (menuDescriptor !=null ) {
-            for (MenuDescriptor.MenuItem md:menuDescriptor.getMenu()){
-                String label = md.mAttrs == null?"base":md.mAttrs.get("label");
-                NavigationView navMenu = findViewById(R.id.nav);
-                navMenu.getMenu().add(R.id.wf,NONE,NONE,label);
+    List<MenuDescriptor.MenuItem> menuTopology = menuDescriptor.getMenu();
+    int orderIdx = 101;
+    int itemId = 2;
+    for (MenuDescriptor.MenuItem item:menuTopology) {
+        //first one is root, no header.
+        if (item.mAttrs != null) {
+            MenuItem header = menu.add(R.id.wf_group,itemId++,orderIdx++,item.mAttrs.get("label"));
+            header.setCheckable(false);
+            header.setEnabled(false);
+        }
+        if (item.mElems != null){
+            for (Map<String, String> elem : item.mElems) {
+                Log.d("KOOK",item.mElems.toString());
+                MenuItem entry = menu.add(R.id.wf_group, itemId++, orderIdx++, elem.get("target"));
+                entry.setOnMenuItemClickListener(item1 -> {
+                    Log.d("VOOF",elem.get("target"));
+                    Workflow wf = Loader.getInstance().getBundle().getWf(elem.get("target"));
+                    Log.d("v","WF has"+wf.getBlocks().size()+" blocks");
+                    return true;
+                });
             }
         }
-        return super.onPrepareOptionsMenu(menu);
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.navigation_drawer, menu);
-        return true;
     }
-*/
+}
+
+
 
 }

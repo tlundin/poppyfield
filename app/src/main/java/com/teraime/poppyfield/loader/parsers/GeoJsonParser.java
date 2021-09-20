@@ -170,7 +170,7 @@ public class GeoJsonParser {
                                                 reader.endArray();
                                             break;
                                         default:
-                                            Logger.gl().e("vortex", "in default...not good: " + reader.peek() + "::::" + reader.toString());
+                                            Logger.gl().e("in default...not good: " + reader.peek() + "::::" + reader.toString());
                                             List<String> skippies = new ArrayList<>();
                                             while (reader.hasNext()) {
                                                 String skipped = getAttribute(reader);
@@ -178,9 +178,9 @@ public class GeoJsonParser {
                                                     skippies.add(skipped);
                                             }
                                             if (skippies.size() > 0) {
-                                                Logger.gl().e("vortex", "Skipped " + skippies.size() + " attributes for " + type + ":");
+                                                Logger.gl().e("Skipped " + skippies.size() + " attributes for " + type + ":");
                                                 for (String skip : skippies)
-                                                    Logger.gl().e("vortex", skip);
+                                                    Logger.gl().e( skip);
                                             }
                                             break;
                                     }
@@ -192,7 +192,7 @@ public class GeoJsonParser {
                                         if (myCoordinates != null && !myCoordinates.isEmpty())
                                             myGisObjects.add(new GisObject(keyChain, myCoordinates, attributes));
                                         else
-                                            Logger.gl().e("vortex", "No coordinates for multipoint in " + type + "!");
+                                            Logger.gl().e( "No coordinates for multipoint in " + type + "!");
                                         break;
 
                                     case GisConstants.POLYGON:
@@ -210,7 +210,7 @@ public class GeoJsonParser {
                    // throw new MalformedJsonException("Parse error when parsing geojson type " + type + ". Expected Object type at " + reader.toString() + " peek: " + reader.peek());
 
             } catch(MalformedJsonException je){
-                Logger.gl().e("vortex", je.getMessage());
+                Logger.gl().e( je.getMessage());
             }
 
         reader.close();

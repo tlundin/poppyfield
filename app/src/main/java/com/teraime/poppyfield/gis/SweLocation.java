@@ -19,7 +19,7 @@ public class SweLocation implements Location {
 		if (Y==null||X==null) {
 			north=-1;
 			east=-1;
-			Logger.gl().e("vortex","null value in sweloc constructor! "+X+" "+Y);
+			Logger.gl().e("null value in sweloc constructor! "+X+" "+Y);
 			return;
 		}
 		this.east=Double.parseDouble(X);
@@ -30,7 +30,7 @@ public class SweLocation implements Location {
 		if (XandY == null) {
 			north=-1;
 			east=-1;
-			Logger.gl().e("vortex","null value in sweloc constructor! ");
+			Logger.gl().e("null value in sweloc constructor! ");
 			return;
 		}
 		String []xy = XandY.split(",");

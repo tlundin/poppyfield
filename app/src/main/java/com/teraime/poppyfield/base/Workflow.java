@@ -16,4 +16,7 @@ public class Workflow {
     public void addBlocks(List<Block> _blocks) {
         this.blocks = _blocks;
     }
+
+
+
 }

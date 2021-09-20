@@ -22,9 +22,9 @@ public class SpinnerParser {
         for (String row: rows) {
             String[] r = Tools.split(row);
             if (r.length < noOfRequiredColumns) {
-                Logger.gl().e("SpinnerParser", "Too short row in spinnerdef file. Row #" + c+1 + " has " + r.length + " columns but should have " + noOfRequiredColumns + " columns");
+                Logger.gl().e("Too short row in spinnerdef file. Row #" + c+1 + " has " + r.length + " columns but should have " + noOfRequiredColumns + " columns");
                 for (int i = 0; i < r.length; i++)
-                    Logger.gl().e("SpinnerParser", "R" + i + ":" + r[i]);
+                    Logger.gl().e( "R" + i + ":" + r[i]);
                 throw new ParseException("Spinnerdef file corrupt.", -1);
             } else {
                 String id = r[0];

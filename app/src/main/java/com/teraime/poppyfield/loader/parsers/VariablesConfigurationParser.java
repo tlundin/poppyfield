@@ -35,7 +35,7 @@ public class VariablesConfigurationParser {
         Logger.gl().d("PARSE", "VariablesConfig header: " + header);
         String[] varPatternHeaderS = header.split(",");
         if (varPatternHeaderS.length < VAR_PATTERN_ROW_LENGTH) {
-            Logger.gl().e("PARSE", "Header corrupt in Variables.csv: " + Arrays.toString(varPatternHeaderS));
+            Logger.gl().e("Header corrupt in Variables.csv: " + Arrays.toString(varPatternHeaderS));
             throw new ParseException("Corrupt header", 0);
         }
         //Remove duplicte group column and varname if group file present.
@@ -57,7 +57,7 @@ public class VariablesConfigurationParser {
                 }
             }
             if (!foundFunctionalGroupHeader || !foundVarNameHeader) {
-                Logger.gl().e("PARSE","Could not find required columns " + Col_Functional_Group + " or " + Col_Variable_Name);
+                Logger.gl().e("Could not find required columns " + Col_Functional_Group + " or " + Col_Variable_Name);
                 throw new ParseException("VariableConfiguration - Corrupt header ",0);
             }
 
@@ -71,8 +71,8 @@ public class VariablesConfigurationParser {
             String[] r = Tools.split(row);
 
             if (r.length < VAR_PATTERN_ROW_LENGTH) {
-                Logger.gl().e("PARSE","Too short row or row null in Variable.csv.");
-                Logger.gl().e("PARSE","Row length: " + r.length + ". Expected length: " + VAR_PATTERN_ROW_LENGTH);
+                Logger.gl().e("Too short row or row null in Variable.csv.");
+                Logger.gl().e("Row length: " + r.length + ". Expected length: " + VAR_PATTERN_ROW_LENGTH);
                 throw new ParseException("Parse error, row: "+index,index);
             } else {
                 for (int i = 0; i < r.length; i++) {
@@ -83,19 +83,12 @@ public class VariablesConfigurationParser {
                 String pGroup = r[pGroupIndex];
                 List<String> trr = trimmed(r);
                 if (pGroup == null || pGroup.trim().length() == 0) {
-                    //Log.d("nils","found variable "+r[pNameIndex]+" in varpattern");
                     myTable.addRow(trr);
-                    //o.addRow("Generated variable(1): ["+r[pNameIndex]+"]");
-                    //Log.d("vortex", "Generated variable [" + r[pNameIndex] + "] ROW:\n" + row);
                 } else {
-                    //Log.d("nils","found group name: "+pGroup);
                     elems = gc.groups.get(pGroup);
                     String varPatternName = r[pNameIndex];
                     if (elems == null) {
-                        //If the variable has a group,add it
-                        //Log.d("nils","Group "+pGroup+" in line#"+rowC+" does not exist in config file. Will use name: "+varPatternName);
                         String name = pGroup.trim() + ":" + varPatternName.trim();
-                        //o.addRow("Generated variable(2): ["+name+"]");
                         trr.set(pNameIndex, name);
                         myTable.addRow(trr);
                     } else {
@@ -104,7 +97,7 @@ public class VariablesConfigurationParser {
                             String cFileNamePart = elem.get(gc.nameIndex);
 
                             if (varPatternName == null) {
-                                Logger.gl().e("PARSE","varPatternNamepart evaluates to null at line#" + index + " in varpattern file");
+                                Logger.gl().e("VarPatternNamepart evaluates to null at line#" + index + " in varpattern file");
                             } else {
                                 String fullVarName = pGroup.trim() + ":" + (cFileNamePart != null ? cFileNamePart.trim() + ":" : "") + varPatternName.trim();
                                 //Remove duplicate elements from Config File row.
@@ -116,22 +109,21 @@ public class VariablesConfigurationParser {
                                 varPatternL.addAll(elemCopy);
                                 //Replace name column with full name.
                                 varPatternL.set(pNameIndex, fullVarName);
-                                //o.addRow("Generated variable(3): ["+fullVarName+"]");
                                 ErrCode err = myTable.addRow(varPatternL);
                                 if (err != ErrCode.ok) {
                                     switch (err) {
                                         case keyError:
 
-                                            Logger.gl().e("PARSE","KEY ERROR!");
+                                            Logger.gl().e("KEY ERROR!");
                                             break;
                                         case tooFewColumns:
 
-                                            Logger.gl().e("PARSE","TOO FEW COLUMNS!");
+                                            Logger.gl().e("TOO FEW COLUMNS!");
                                             throw new ParseException("Too few columns",0);
                                         case tooManyColumns:
 
-                                            Logger.gl().e("PARSE","TOO MANY COLUMNS!");
-                                            Logger.gl().e("PARSE","VariablesConfiguration, line " + index);
+                                            Logger.gl().e("TOO MANY COLUMNS!");
+                                            Logger.gl().e("VariablesConfiguration, line " + index);
                                             break;
                                     }
 

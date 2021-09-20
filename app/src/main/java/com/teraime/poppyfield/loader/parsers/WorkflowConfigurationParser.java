@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,19 +31,18 @@ public class WorkflowConfigurationParser {
 
     public static WorkFlowBundleDescriptor parse(XmlPullParser parser) throws XmlPullParserException, IOException, ParseException {
         String imageMetaFormat;
-        String myApplication;
         parser.nextTag();
         parser.require(XmlPullParser.START_TAG, null, "bundle");
-        myApplication = parser.getAttributeValue(null, "application");
+        //myApplication =
+        parser.getAttributeValue(null, "application");
         WorkFlowBundleDescriptor wd = new WorkFlowBundleDescriptor();
-        float newWorkflowVersion = -1;
 
         try {
-            newWorkflowVersion = Float.parseFloat(parser.getAttributeValue(null, "version"));
+            Float.parseFloat(parser.getAttributeValue(null, "version"));
             wd.appVersion = parser.getAttributeValue(null, "app_version");
         }
         catch (Exception e) {
-            Logger.gl().e("PARSE", "WorkflowBundle:No app version, or no workflowversion.");
+            Logger.gl().e("WorkflowBundle:No app version, or no workflowversion.");
 
             throw new ParseException("No appversion and/or workflow-version. Will default to 0. Please add.",0);
         }
@@ -62,7 +62,7 @@ public class WorkflowConfigurationParser {
             }
             else if (name.equals("workflow")) {
                 //Add workflow to bundle, return a count.
-                wd.bundle.add(readWorkflow(myApplication, parser));
+                wd.bundle.add(readWorkflow(parser));
 
             } else {
                 skip(name,parser);
@@ -71,7 +71,7 @@ public class WorkflowConfigurationParser {
         return wd;
     }
 
-    private static Workflow readWorkflow(String myApplication, XmlPullParser parser) throws XmlPullParserException, IOException {
+    private static Workflow readWorkflow(XmlPullParser parser) throws XmlPullParserException, IOException {
 
         Workflow wf = new Workflow();
         parser.require(XmlPullParser.START_TAG, null, "workflow");
@@ -93,7 +93,7 @@ public class WorkflowConfigurationParser {
 
 
     private static List<Block> readBlocks(XmlPullParser parser) throws IOException, XmlPullParserException {
-        List<Block> blocks=new ArrayList<Block>();
+        List<Block> blocks = new LinkedList<>();
         parser.require(XmlPullParser.START_TAG, null,"blocks");
         String name="";
         try {
@@ -104,16 +104,16 @@ public class WorkflowConfigurationParser {
                 blocks.add(createBlock(parser.getName(),parser));
                 }
         } catch (XmlPullParserException e) {
-            Logger.gl().e("vortex","Got parse error when reading "+name+" on line "+e.getLineNumber());
-            Logger.gl().e("vortex","Cause: "+e.getCause());
-            Logger.gl().e("vortex","Message: "+e.getMessage());
+            Logger.gl().e("Got parse error when reading "+name+" on line "+e.getLineNumber());
+            Logger.gl().e("Cause: "+e.getCause());
+            Logger.gl().e("Message: "+e.getMessage());
             throw e;
         }
         //Check that no block has the same ID
-        Set<String> tempSet = new HashSet<String>();
+        Set<String> tempSet = new HashSet<>();
         for (Block b:blocks)  {
             if (!tempSet.add(b.getBlockId())) {
-                Logger.gl().e("PARSE","Duplicate Block ID "+b.getBlockId());
+                Logger.gl().e("Duplicate Block ID "+b.getBlockId());
                 return blocks;
             }
         }
@@ -124,7 +124,7 @@ public class WorkflowConfigurationParser {
     private static Block createBlock(String blockName, XmlPullParser parser) throws IOException, XmlPullParserException {
         Log.d("v","Creating block "+blockName);
         Map<String,String> attrs = new HashMap<>();
-        String workflowName=null; String args[]=null,context=null,id=null;
+        String id=null;
         parser.require(XmlPullParser.START_TAG, null,blockName);
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -166,11 +166,11 @@ public class WorkflowConfigurationParser {
     //Skips entry...return one level up in recursion if end reached.
     protected static void skip(String name, XmlPullParser parser) throws XmlPullParserException, IOException {
         if (parser.getEventType() != XmlPullParser.START_TAG) {
-            Logger.gl().e("PARSE","IllegalStateException while trying to read START_TAG");
+            Logger.gl().e("IllegalStateException while trying to read START_TAG");
             throw new IllegalStateException();
         }
         if ("workflow".equals(name)) {
-            Logger.gl().e("PARSE","Closing tag for workflow missing. Aborting");
+            Logger.gl().e("Closing tag for workflow missing. Aborting");
             throw new XmlPullParserException("Workflow closing tag missing");
             } else 
                 Logger.gl().d("PARSE",("Skipped TAG: ["+name+"]"));

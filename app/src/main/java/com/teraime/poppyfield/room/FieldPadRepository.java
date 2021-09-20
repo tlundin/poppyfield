@@ -1,16 +1,13 @@
 package com.teraime.poppyfield.room;
 
 import android.app.Application;
-import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
-import com.teraime.poppyfield.loader.Loader;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,15 +47,11 @@ public class FieldPadRepository {
     // You must call this on a non-UI thread or your app will throw an exception. Room ensures
     // that you're not doing any long running operations on the main thread, blocking the UI.
     public void insert(VariableTable variable) {
-        FieldPadRoomDatabase.databaseWriteExecutor.execute(() -> {
-            mVDao.insert(variable);
-        });
+        FieldPadRoomDatabase.databaseWriteExecutor.execute(() -> mVDao.insert(variable));
     }
 
     public void deleteAllHistorical() {
-        FieldPadRoomDatabase.databaseWriteExecutor.execute(() -> {
-            mVDao.deleteAllHistorical();
-        });
+        FieldPadRoomDatabase.databaseWriteExecutor.execute(mVDao::deleteAllHistorical);
     }
 
     Map<String,String> map = new HashMap<>();
@@ -71,7 +64,7 @@ public class FieldPadRepository {
         for(String key:g.getKeys().keySet()) {
             colName=map.get(key);
             if (colName==null)
-                Logger.gl().e("v","missing key "+key);
+                Logger.gl().e("missing key "+key);
             else
                 am.put(colName,g.getKeys().get(key));
         }

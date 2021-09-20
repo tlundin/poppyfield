@@ -32,7 +32,7 @@ public class GroupsConfigurationParser {
                 nameIndex = i;
         }
         if (nameIndex == -1 || groupIndex == -1) {
-            Logger.gl().e("PARSE","GroupsConfiguration header missing either name or functional group column. Load cannot proceed");
+            Logger.gl().e("GroupsConfiguration header missing either name or functional group column. Load cannot proceed");
             throw new ParseException("GroupsConfiguration header missing either name or functional group column. Load cannot proceed",-1);
         }
         int index=1;
@@ -49,7 +49,7 @@ public class GroupsConfigurationParser {
                 List<List<String>> elem = groups.computeIfAbsent(group, k -> new ArrayList<>());
                 elem.add(Arrays.asList(r));
             } else {
-                Logger.gl().e("PARSE","GroupsConfiguration has malformed row, rowindex "+index);
+                Logger.gl().e("GroupsConfiguration has malformed row, rowindex "+index);
                 throw new ParseException("GroupsConfiguration header missing either name or functional group column. Load cannot proceed",-1);
 
             }
