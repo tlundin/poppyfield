@@ -1,5 +1,12 @@
 *.iml
 .gradle
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -13,3 +20,4 @@
 .externalNativeBuild
 .cxx
 local.properties
+
