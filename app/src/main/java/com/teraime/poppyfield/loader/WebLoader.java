@@ -39,6 +39,12 @@ public class WebLoader {
             }).execute(protocol+ url + gisFile + ".json");
         }
     }
+
+    public static void getMapMetaData(LoaderCb callback, String app, String picName) {
+        String metaFile = picName.replace("jpg","jgw");
+        String url = S.SERVER + "/" + app + "/extras/";
+        new DownloadFileTask(callback).execute(protocol+ url + metaFile);
+    }
     
     private static class DownloadFileTask extends AsyncTask<String, Void, List<String>> {
         final LoaderCb cb;

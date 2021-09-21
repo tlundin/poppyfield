@@ -6,17 +6,28 @@ import java.util.Map;
 
 public class Workflow {
 
-    List<Block> blocks;
-    Map<String,Block> blockM;
+    final List<Block> blocks;
+    final Map<String,Block> blockM;
 
 
-    public Workflow() {
+    public Workflow(List<Block> _blocks) {
+        this.blocks = _blocks;
+        blockM = new HashMap<>();
+        for (Block b : blocks) {
+            blockM.put(b.getBlockType(), b);
+        }
     }
 
     public String getName() {
         return blocks.get(0).mAttrs.get("workflowname");
     }
     public List<Block> getBlocks() { return blocks; }
+    public Block getBlock(String blockType) {
+        return blockM.get(blockType);
+    }
+    public boolean hasBlock(String blockType) {
+        return blockM.get(blockType)!=null;
+    }
 
     public String getTemplate() throws ParseException {
         try {
@@ -29,13 +40,7 @@ public class Workflow {
 
 
 
-    public void addBlocks(List<Block> _blocks) {
-        this.blocks = _blocks;
-        blockM = new HashMap<>();
-        for (Block b : blocks) {
-          blockM.put(b.getBlockType(), b);
-        }
-    }
+
 
 
 

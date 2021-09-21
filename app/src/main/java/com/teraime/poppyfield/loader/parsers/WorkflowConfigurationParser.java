@@ -73,7 +73,8 @@ public class WorkflowConfigurationParser {
 
     private static Workflow readWorkflow(XmlPullParser parser) throws XmlPullParserException, IOException {
 
-        Workflow wf = new Workflow();
+
+        List<Block> blocks=null;
         parser.require(XmlPullParser.START_TAG, null, "workflow");
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -81,13 +82,13 @@ public class WorkflowConfigurationParser {
             }
 
             String name = parser.getName();
-            if (name.equals("blocks")) wf.addBlocks(readBlocks(parser));
+            if (name.equals("blocks"))
+                blocks = readBlocks(parser);
             else {
                 skip(name,parser);
             }
         }
-        return wf;
-
+        return new Workflow(blocks);
 
     }
 

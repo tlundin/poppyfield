@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Block {
+    public static final String GIS = "block_add_gis_image_view" ;
     String id;
     Map<String,String> mAttrs;
     String blockType;
@@ -18,6 +19,9 @@ public class Block {
 
     public Map<String, String> getAttrs() {
         return mAttrs;
+    }
+    public String getAttr(String attributeName) {
+        return mAttrs.get(attributeName);
     }
 
     public String getBlockType() {

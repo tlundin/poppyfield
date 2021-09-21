@@ -24,6 +24,7 @@ public class WorldViewModel extends AndroidViewModel {
     private List<String> mManifest;
     private final LiveData<List<VariableTable>> mVariables;
     private Workflow mWorkflow;
+    private final String app;
 
     public WorldViewModel(Application application) {
         super(application);
@@ -31,11 +32,11 @@ public class WorldViewModel extends AndroidViewModel {
         mVariables = mRepository.getTimeOrderedList();
         myConf = new MutableLiveData<>(Loader.getInstance().getConfigs());
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
-        String app=prefs.getString("App","smabio");
+        this.app=prefs.getString("App","smabio");
         Loader.getInstance().load(app,this);
     }
 
-
+    public String getApp() { return app; }
     public List<String> getManifest(){ return mManifest; }
     public Workflow getSelectedWorkFlow() { return mWorkflow; }
     public void setSelectedWorkFlow(Workflow wf) { mWorkflow = wf; }

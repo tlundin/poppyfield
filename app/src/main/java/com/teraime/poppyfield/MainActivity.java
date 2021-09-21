@@ -16,9 +16,11 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
+import com.teraime.poppyfield.base.Block;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.Tools;
+import com.teraime.poppyfield.base.WFRunner;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Loader;
@@ -58,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             Fragment logTVF = Tools.createFragment("LogScreen");
-            setContentView(logTVF, "Startup");
+            setContentView(logTVF, "Boot");
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -94,6 +96,12 @@ public class MainActivity extends AppCompatActivity {
                         }
                         Log.d("v","Template "+template);
                         model.setSelectedWorkFlow(wf);
+                        //Check what template is required.
+                        //TODO: Remove - make sure correct template used.
+                        if (wf.hasBlock(Block.GIS)) {
+                            Log.d("WARNING","Wrong template used - GIS blocks requires GisMap template..substituting");
+                            template = "GisMap";
+                        }
                         try {
                             Fragment templateF = Tools.createFragment(template);
                             setContentView(templateF,wf.getName());
@@ -116,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
                 .replace(R.id.content_frame, templateF)
                 .addToBackStack("DummyValue")
                 .commit();
-        topAppBar.setTitle(name);
+        topAppBar.setTitle(name.replace("wf_",""));
 
     }
 
