@@ -1,13 +1,25 @@
 package com.teraime.poppyfield.room;
 
 import android.app.Application;
+import android.util.Log;
 
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
+import com.google.android.libraries.maps.model.LatLng;
+import com.google.android.libraries.maps.model.LatLngBounds;
 import com.teraime.poppyfield.base.Logger;
+import com.teraime.poppyfield.gis.Geomatte;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
+import com.teraime.poppyfield.gis.PhotoMeta;
+import com.teraime.poppyfield.loader.LoaderCb;
+import com.teraime.poppyfield.loader.WebLoader;
+import com.teraime.poppyfield.loader.parsers.JGWParser;
+import com.teraime.poppyfield.templates.GisMap;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +30,9 @@ public class FieldPadRepository {
 
     private final VariableDAO mVDao;
     private final LiveData<List<VariableTable>> allVars;
-
+    private final MutableLiveData<LatLngBounds> mBoundaries;
+    private final Map<Fragment,LatLngBounds> boundaryMap;
+    private final Map<String,String> columnKeyMap;
     // Note that in order to unit test the WordRepository, you have to remove the Application
     // dependency. This adds complexity and much more code, and this sample is not about testing.
     // See the BasicSample in the android-architecture-components repository at
@@ -27,15 +41,17 @@ public class FieldPadRepository {
         FieldPadRoomDatabase db = FieldPadRoomDatabase.getDatabase(application);
         mVDao = db.variableDao();
         allVars = mVDao.getTimeOrderedList();
-
-        map.put("UUID","UUID");
-        map.put("value","value");
-        map.put("lag","lag");
-        map.put("author","author");
-        map.put("år","year");
-        map.put("year","year");
-        map.put("trakt","L1");
-        map.put("gistyp","L2");
+        mBoundaries = new MutableLiveData<>();
+        boundaryMap = new HashMap<>();
+        columnKeyMap = new HashMap<>();
+        columnKeyMap.put("UUID","UUID");
+        columnKeyMap.put("value","value");
+        columnKeyMap.put("lag","lag");
+        columnKeyMap.put("author","author");
+        columnKeyMap.put("år","year");
+        columnKeyMap.put("year","year");
+        columnKeyMap.put("trakt","L1");
+        columnKeyMap.put("gistyp","L2");
     }
 
     // Room executes all queries on a separate thread.
@@ -54,15 +70,12 @@ public class FieldPadRepository {
         FieldPadRoomDatabase.databaseWriteExecutor.execute(mVDao::deleteAllHistorical);
     }
 
-    Map<String,String> map = new HashMap<>();
-
-
     public void insertGisObject(GisObject g) {
         Map<String,String> am = new HashMap<>();
         String var=GisConstants.GPS_Coord_Var_Name,value=g.coordsToString(),year="H";
         String colName;
         for(String key:g.getKeys().keySet()) {
-            colName=map.get(key);
+            colName= columnKeyMap.get(key);
             if (colName==null)
                 Logger.gl().e("missing key "+key);
             else
@@ -91,4 +104,31 @@ public class FieldPadRepository {
         });
     }
 
+    public LiveData<LatLngBounds> getBoundary(GisMap map, String app) {
+        updateBoundary(map,app);
+        return mBoundaries;
+    }
+
+    private void updateBoundary(GisMap map,String app) {
+        if (boundaryMap.get(map)!=null) {
+            mBoundaries.setValue(boundaryMap.get(map));
+        } else {
+            WebLoader.getMapMetaData(new LoaderCb() {
+                @Override
+                public void loaded(List<String> file) {
+                    PhotoMeta p=null;
+                    try {
+                        p = JGWParser.parse(file,919,993);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                    LatLng NE = Geomatte.convertToLatLong(p.E,p.N);
+                    LatLng SW = Geomatte.convertToLatLong(p.W,p.S);
+                    LatLngBounds latLngBounds = new LatLngBounds(SW,NE);
+                    boundaryMap.put(map,latLngBounds);
+                    mBoundaries.setValue(latLngBounds);
+                }
+            }, app, map.getMetaSource());
+        }
+    }
 }

@@ -22,6 +22,7 @@ public class Loader {
 
     private static Loader instance=null;
     private final List<Config<?>> mConfigs = new ArrayList<>();
+    private final MutableLiveData<String> logPing = new MutableLiveData<>();
     private WorkflowBundle wf;
     private Spinners spinners;
     private Table t;
@@ -52,6 +53,7 @@ public class Loader {
                         gisTypeL.add(gf.strip(geoJ).stringify().parse(type));
                         long diff = (System.currentTimeMillis()-t1);
                         Logger.gl().d("PARSE","Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
+                        logPing.setValue("");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -67,6 +69,7 @@ public class Loader {
                     Logger.gl().d("INSERT","Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
                 }
                 Logger.gl().d("INSERT","DONE.");
+                logPing.setValue("");
 
             },fileList,app,geoJsonFiles);
         },app);
@@ -75,6 +78,7 @@ public class Loader {
         WebLoader.getModule(moduleFile -> {
             if (moduleFile != null) {
                 Logger.gl().d("LOAD", "[Bundle loaded.]");
+                logPing.setValue("");
                 try {
                     Log.d("WORK",moduleFile.toString());
                     wf = new WorkflowBundle().stringify(moduleFile).parse();
@@ -88,6 +92,7 @@ public class Loader {
         WebLoader.getModule(moduleFile -> {
             if (moduleFile != null) {
                 Logger.gl().d("LOAD", "[Spinners loaded.]");
+                logPing.setValue("");
                 try {
                     spinners = new Spinners().strip(moduleFile).parse();
                     mConfigs.add(spinners);
@@ -100,11 +105,12 @@ public class Loader {
         WebLoader.getModule(configF -> {
             if (configF != null) {
                 Logger.gl().d("LOAD", "[Configs loaded.]");
+
                 try {
                     WebLoader.getModule(variableF -> {
                         if (variableF != null) {
                             Logger.gl().d("LOAD", "[Variables loaded.]");
-
+                            logPing.setValue("");
                             try {
                                 GroupsConfiguration gc = new GroupsConfiguration().strip(configF).parse();
                                 VariablesConfiguration vc = new VariablesConfiguration().strip(variableF).parse(gc);
@@ -137,7 +143,5 @@ public class Loader {
     public Table getTable() {
         return t;
     }
-
-
-
+    public MutableLiveData<String> getLogObservable() { return logPing;   }
 }

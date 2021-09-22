@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 
 import com.google.android.gms.common.internal.Preconditions;
 import com.google.android.libraries.maps.CameraUpdateFactory;
@@ -35,6 +37,8 @@ public class GisMap extends TemplateFragment implements OnMapReadyCallback {
 
 
     private MapView mMap;
+    private String mSource,mName;
+    private GoogleMap gMap;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -44,45 +48,38 @@ public class GisMap extends TemplateFragment implements OnMapReadyCallback {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.d("v","in oncreate for gismap");
+        View v = super.onCreateView(inflater,container,savedInstanceState,R.layout.template_gis_map);
+        if (model.getMap() == null) {
+            mMap = v.findViewById(R.id.myMap);
+            mMap.onCreate(savedInstanceState);
+            mMap.getMapAsync(this);
+        } else {
 
-        super.onCreateView(inflater,container,savedInstanceState,R.layout.template_gis_map);
-        mMap = (MapView) mView.findViewById(R.id.myMap);
-        mMap.onCreate(savedInstanceState);
-        mMap.getMapAsync(this);
-        return mView;
+        }
+
+        return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
     }
 
     @Override
     public void onMapReady(com.google.android.libraries.maps.GoogleMap googleMap) {
-        for (Block b:model.getSelectedWorkFlow().getBlocks()) {
-            Log.d("v", b.getBlockType() + " attr");
-            Log.d("v", b.getAttrs().toString());
-        }
+        model.setMap(googleMap);
         Block gis = model.getSelectedWorkFlow().getBlock(Block.GIS);
-        String pic = gis.getAttr("source");
-
-        WebLoader.getMapMetaData(new LoaderCb() {
+        mSource = gis.getAttr("source");
+        //googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        LiveData<LatLngBounds> camBoundsL = model.getMapBoundary(this);
+        Observer<? super LatLngBounds> boundsObserver = new Observer<LatLngBounds>() {
             @Override
-            public void loaded(List<String> file) {
-                for (String r:file) {
-                    Log.d("GIS",r);
-                }
-                PhotoMeta p=null;
-                try {
-                    p = JGWParser.parse(file,919,993);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-                LatLng NE = Geomatte.convertToLatLong(p.E,p.N);
-                LatLng SW = Geomatte.convertToLatLong(p.W,p.S);
-                LatLngBounds latLngBounds = new LatLngBounds(SW,NE);
-
-                googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            public void onChanged(LatLngBounds latLngBounds) {
                 googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,0));
-                //googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom));
             }
-        }, model.getApp(), pic);
-
+        };
+        camBoundsL.observe(this,boundsObserver);
     }
 
     private int getGoogleMapType(String mapType) {
@@ -103,4 +100,12 @@ public class GisMap extends TemplateFragment implements OnMapReadyCallback {
         }
     }
 
+    public String getMetaSource() {
+        return mSource;
+    }
+
+    @Override
+    public String getName() {
+        return this.getTag();
+    }
 }

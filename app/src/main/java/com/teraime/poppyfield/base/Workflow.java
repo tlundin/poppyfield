@@ -1,4 +1,6 @@
 package com.teraime.poppyfield.base;
+import android.util.Log;
+
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -7,7 +9,7 @@ import java.util.Map;
 public class Workflow {
 
     final List<Block> blocks;
-    final Map<String,Block> blockM;
+    final Map<String, Block> blockM;
 
 
     public Workflow(List<Block> _blocks) {
@@ -21,22 +23,35 @@ public class Workflow {
     public String getName() {
         return blocks.get(0).mAttrs.get("workflowname");
     }
-    public List<Block> getBlocks() { return blocks; }
+
+    public List<Block> getBlocks() {
+        return blocks;
+    }
+
     public Block getBlock(String blockType) {
         return blockM.get(blockType);
     }
+
     public boolean hasBlock(String blockType) {
-        return blockM.get(blockType)!=null;
+        return blockM.get(blockType) != null;
     }
 
     public String getTemplate() throws ParseException {
         try {
-        return blockM.get("block_define_page").getAttrs().get("type");
+            return blockM.get("block_define_page").getAttrs().get("type");
 
         } catch (Exception e) {
-            throw new ParseException("Failed to resolve Template type from define page block",-1);
+            throw new ParseException("Failed to resolve Template type from define page block", -1);
         }
     }
+
+    public void printBlocks() {
+        for(Block b:getBlocks()) {
+            Log.d("v", b.getBlockType() + " attr");
+            Log.d("v", b.getAttrs().toString());
+        }
+    }
+
 
 
 

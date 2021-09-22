@@ -24,6 +24,7 @@ import com.teraime.poppyfield.base.WFRunner;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Loader;
+import com.teraime.poppyfield.templates.TemplateFragment;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import java.text.ParseException;
@@ -35,35 +36,45 @@ public class MainActivity extends AppCompatActivity {
     MenuDescriptor menuDescriptor = null;
     MaterialToolbar topAppBar;
     DrawerLayout drawerLayout;
-
+    WorldViewModel model;
+    Boolean appEntry = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout);
-        final WorldViewModel model = new ViewModelProvider(this).get(WorldViewModel.class);
+        model = new ViewModelProvider(this).get(WorldViewModel.class);
         final NavigationView navi = findViewById(R.id.nav);
         navi.setItemIconTintList(null);
         topAppBar = this.findViewById(R.id.topAppBar);
+        model.setToolBar(topAppBar);
         drawerLayout = findViewById(R.id.drawerLayout);
         setSupportActionBar(topAppBar);
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
+
+        if (model.getInfocusPage() == null) {
+            appEntry = true;
+            try {
+                Fragment logTVF = Tools.createFragment("LogScreen");
+                setContentView(logTVF, "Boot");
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        } else
+            getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,model.getPage(model.getInfocusPage()),model.getInfocusPage()).commit();
+
         final Observer<List<Config<?>>> loadObserver = configs -> {
-            if (configs.size() == 4) {
+            if (configs.size() == 4 ) {
+                populateMenu(navi.getMenu(), model);
                 Logger.gl().d("MORTIS", "DONE");
-                populateMenu(navi.getMenu(),model);
-                drawerLayout.openDrawer(GravityCompat.START);
+                if (appEntry) {
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
             }
         };
         model.getMyConf().observe(this,
                 loadObserver);
 
-        try {
-            Fragment logTVF = Tools.createFragment("LogScreen");
-            setContentView(logTVF, "Boot");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
     }
 
 
@@ -121,11 +132,11 @@ public class MainActivity extends AppCompatActivity {
     private void setContentView(Fragment templateF, String name) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft
-                .replace(R.id.content_frame, templateF)
-                .addToBackStack("DummyValue")
+                .replace(R.id.content_frame, templateF,name)
+                .addToBackStack(name)
                 .commit();
-        topAppBar.setTitle(name.replace("wf_",""));
-
+        model.setPage(templateF,name);
+        Log.d("REFFO","In SETCONTENT: "+getSupportFragmentManager().getFragments().toString());
     }
 
 
