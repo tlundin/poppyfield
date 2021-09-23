@@ -2,6 +2,7 @@ package com.teraime.poppyfield.base;
 import android.util.Log;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,14 +10,17 @@ import java.util.Map;
 public class Workflow {
 
     final List<Block> blocks;
-    final Map<String, Block> blockM;
+    final Map<String, List<Block>> blockM;
 
 
     public Workflow(List<Block> _blocks) {
         this.blocks = _blocks;
         blockM = new HashMap<>();
         for (Block b : blocks) {
-            blockM.put(b.getBlockType(), b);
+            String type = b.getBlockType();
+            if (blockM.get(type) == null)
+                blockM.put(type, new ArrayList<>());
+            blockM.get(type).add(b);
         }
     }
 
@@ -28,8 +32,13 @@ public class Workflow {
         return blocks;
     }
 
+    public List<Block> getBlocksOfType(String type) {
+        return blockM.get(type);
+    }
+
+
     public Block getBlock(String blockType) {
-        return blockM.get(blockType);
+        return blockM.get(blockType).get(0);
     }
 
     public boolean hasBlock(String blockType) {
@@ -38,7 +47,7 @@ public class Workflow {
 
     public String getTemplate() throws ParseException {
         try {
-            return blockM.get("block_define_page").getAttrs().get("type");
+            return getBlock("block_define_page").getAttrs().get("type");
 
         } catch (Exception e) {
             throw new ParseException("Failed to resolve Template type from define page block", -1);
@@ -51,11 +60,6 @@ public class Workflow {
             Log.d("v", b.getAttrs().toString());
         }
     }
-
-
-
-
-
 
 
 

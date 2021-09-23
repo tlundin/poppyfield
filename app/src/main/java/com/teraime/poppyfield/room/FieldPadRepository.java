@@ -1,7 +1,6 @@
 package com.teraime.poppyfield.room;
 
 import android.app.Application;
-import android.util.Log;
 
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
@@ -17,7 +16,7 @@ import com.teraime.poppyfield.gis.PhotoMeta;
 import com.teraime.poppyfield.loader.LoaderCb;
 import com.teraime.poppyfield.loader.WebLoader;
 import com.teraime.poppyfield.loader.parsers.JGWParser;
-import com.teraime.poppyfield.templates.GisMap;
+import com.teraime.poppyfield.templates.GisMapTemplate;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -104,12 +103,12 @@ public class FieldPadRepository {
         });
     }
 
-    public LiveData<LatLngBounds> getBoundary(GisMap map, String app) {
+    public LiveData<LatLngBounds> getBoundary(GisMapTemplate map, String app) {
         updateBoundary(map,app);
         return mBoundaries;
     }
 
-    private void updateBoundary(GisMap map,String app) {
+    private void updateBoundary(GisMapTemplate map, String app) {
         if (boundaryMap.get(map)!=null) {
             mBoundaries.setValue(boundaryMap.get(map));
         } else {

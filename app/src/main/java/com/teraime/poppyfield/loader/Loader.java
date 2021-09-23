@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.Spinners;
 import com.teraime.poppyfield.base.Table;
+import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Configurations.GisType;
@@ -51,6 +52,7 @@ public class Loader {
                         String type = fileList.get(i++);
                         GisType gf = new GisType();
                         gisTypeL.add(gf.strip(geoJ).stringify().parse(type));
+                        Tools.writeToCache(v.getApplication(),gf.getType(),gf.getRawData());
                         long diff = (System.currentTimeMillis()-t1);
                         Logger.gl().d("PARSE","Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
                         logPing.setValue("");
@@ -67,6 +69,7 @@ public class Loader {
                         v.insertGisObject(g);
                     long diff = (System.currentTimeMillis()-t1);
                     Logger.gl().d("INSERT","Inserted "+geo.size()+" "+ gisType.getType()+" in "+diff+" millsec");
+
                 }
                 Logger.gl().d("INSERT","DONE.");
                 logPing.setValue("");

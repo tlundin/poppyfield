@@ -7,6 +7,8 @@ import java.util.Map;
 
 public class Block {
     public static final String GIS = "block_add_gis_image_view" ;
+    public static final String GIS_LAYER = "block_add_gis_layer" ;
+    public static final String GIS_POINTS = "block_add_gis_point_objects";
     String id;
     Map<String,String> mAttrs;
     String blockType;

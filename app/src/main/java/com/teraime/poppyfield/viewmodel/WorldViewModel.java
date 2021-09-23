@@ -18,7 +18,7 @@ import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Loader;
 import com.teraime.poppyfield.room.FieldPadRepository;
 import com.teraime.poppyfield.room.VariableTable;
-import com.teraime.poppyfield.templates.GisMap;
+import com.teraime.poppyfield.templates.GisMapTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +56,7 @@ public class WorldViewModel extends AndroidViewModel {
     //Livedata
     public LiveData<List<VariableTable>> getAllVariables() { return mVariables; }
     public LiveData<List<Config<?>>> getMyConf() { return myConf; }
-    public LiveData<LatLngBounds> getMapBoundary(GisMap mapF) { return mRepository.getBoundary(mapF,app);}
+    public LiveData<LatLngBounds> getMapBoundary(GisMapTemplate mapF) { return mRepository.getBoundary(mapF,app);}
 
 
 

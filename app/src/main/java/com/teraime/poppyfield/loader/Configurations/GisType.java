@@ -38,4 +38,7 @@ public class GisType extends Config<GisType> {
     }
 
 
+    public String getRawData() {
+        return rawGeoData;
+    }
 }

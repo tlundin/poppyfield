@@ -110,8 +110,8 @@ public class MainActivity extends AppCompatActivity {
                         //Check what template is required.
                         //TODO: Remove - make sure correct template used.
                         if (wf.hasBlock(Block.GIS)) {
-                            Log.d("WARNING","Wrong template used - GIS blocks requires GisMap template..substituting");
-                            template = "GisMap";
+                            Log.d("WARNING","Wrong template used - GIS blocks requires GisMapTemplate..substituting");
+                            template = "GisMapTemplate";
                         }
                         try {
                             Fragment templateF = Tools.createFragment(template);

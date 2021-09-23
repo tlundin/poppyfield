@@ -1,13 +1,22 @@
 package com.teraime.poppyfield.templates;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
@@ -20,6 +29,8 @@ import com.google.android.libraries.maps.MapView;
 import com.google.android.libraries.maps.OnMapReadyCallback;
 import com.google.android.libraries.maps.model.LatLng;
 import com.google.android.libraries.maps.model.LatLngBounds;
+import com.google.android.material.snackbar.Snackbar;
+import com.teraime.poppyfield.MainActivity;
 import com.teraime.poppyfield.R;
 import com.teraime.poppyfield.base.Block;
 import com.teraime.poppyfield.base.Constants;
@@ -33,7 +44,7 @@ import com.teraime.poppyfield.loader.parsers.JGWParser;
 import java.text.ParseException;
 import java.util.List;
 
-public class GisMap extends TemplateFragment implements OnMapReadyCallback {
+public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallback {
 
 
     private MapView mMap;
@@ -80,7 +91,60 @@ public class GisMap extends TemplateFragment implements OnMapReadyCallback {
             }
         };
         camBoundsL.observe(this,boundsObserver);
+        List<Block> layers = model.getSelectedWorkFlow().getBlocksOfType(Block.GIS_LAYER);
+        List<Block> gisObjects = model.getSelectedWorkFlow().getBlocksOfType(Block.GIS_POINTS);
+        Log.d("v","GETBLOCKSOFTYPE "+model.getSelectedWorkFlow().getBlocksOfType(Block.GIS_LAYER));
+
+        for(Block l: layers) {
+        //LayerDescriptor<String,> ld = new
+
+            Log.d("v","Layer"+l.getAttrs().toString());
+
+        }
+        if (ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.e("google","FAIL ON PERMISSIONS");
+            ActivityResultLauncher<String> requestPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted)
+                    Log.d("v", "GRANTED");
+                else
+                    Log.d("v", "REFUSED");
+            });
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this.getActivity(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                // Provide an additional rationale to the user if the permission was not granted
+                // and the user would benefit from additional context for the use of the permission.
+                // For example if the user has previously denied the permission.
+                Log.d("SEC",
+                        "check");
+                Snackbar.make(getActivity().findViewById(R.id.drawerLayout), "To be able to show your position on the map, FieldApp needs your permission to access your fine grained location",
+                        Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.ok, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                requestPermission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+                            }
+                        })
+                        .show();
+            } else
+                requestPermission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+                //ActivityCompat.requestPermissions(GisMapTemplate.this.getActivity(), new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            //new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        } else {
+            Log.d("SEC",
+                    "no check");
+            googleMap.setMyLocationEnabled(true);
+        }
+        for(Block gisObject: gisObjects) {
+
+            Log.d("v",gisObject.getBlockType());
+            Log.d("v", gisObject.getAttrs().toString());
+
+        }
+
     }
+
+
 
     private int getGoogleMapType(String mapType) {
         switch (mapType) {
