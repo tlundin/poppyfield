@@ -10,8 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-
-import com.teraime.poppyfield.R;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 public abstract class TemplateFragment extends Fragment {
@@ -34,6 +32,7 @@ public abstract class TemplateFragment extends Fragment {
         Log.d("REFFO","In onRESUME: "+this.getActivity().getSupportFragmentManager().getFragments().toString());
         super.onResume();
     }
+
 
     public abstract String getName();
 }

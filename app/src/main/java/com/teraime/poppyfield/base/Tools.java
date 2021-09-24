@@ -1,9 +1,11 @@
 package com.teraime.poppyfield.base;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.fragment.app.Fragment;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -20,25 +22,30 @@ public class Tools {
 
     public static String readFromCache(Context mContext, String sFileName) throws IOException
         {
-            byte[] encoded = Files.readAllBytes(Paths.get(mContext.getFilesDir().getPath(), "cache"));
+            byte[] encoded = Files.readAllBytes(Paths.get(mContext.getFilesDir().getPath(), "cache",sFileName));
             return new String(encoded, Charset.defaultCharset());
         }
-    public static void writeToCache(Context mContext, String sFileName, String sBody){
+    public static void writeToCache(Context mContext, String sFileName, List<String> arr){
+
         File dir = new File(mContext.getFilesDir(), "cache");
+        File gpxFile = null;
         if(!dir.exists()){
             dir.mkdir();
         }
 
         try {
-            File gpxfile = new File(dir, sFileName);
-            FileWriter writer = new FileWriter(gpxfile);
-            writer.append(sBody);
-            writer.flush();
+            gpxFile = new File(dir, sFileName);
+            FileWriter writer = new FileWriter(gpxFile);
+            for(String str: arr) {
+                writer.write(str + System.lineSeparator());
+            }
             writer.close();
         } catch (Exception e){
             e.printStackTrace();
         }
+
         Logger.gl().d("IO","New Cache entry: "+dir+"/"+sFileName);
+
     }
 
     public static Fragment createFragment(String templateName) throws ClassNotFoundException {

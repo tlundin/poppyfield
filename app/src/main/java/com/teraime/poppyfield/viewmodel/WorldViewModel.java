@@ -9,8 +9,8 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.google.android.libraries.maps.GoogleMap;
-import com.google.android.libraries.maps.model.LatLngBounds;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.gis.GisObject;

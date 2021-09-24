@@ -6,8 +6,8 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.google.android.libraries.maps.model.LatLng;
-import com.google.android.libraries.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.gis.Geomatte;
 import com.teraime.poppyfield.gis.GisConstants;

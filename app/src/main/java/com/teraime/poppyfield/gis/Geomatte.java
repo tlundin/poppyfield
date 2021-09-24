@@ -2,7 +2,7 @@ package com.teraime.poppyfield.gis;
 
 import android.util.Log;
 
-import com.google.android.libraries.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.util.List;
 

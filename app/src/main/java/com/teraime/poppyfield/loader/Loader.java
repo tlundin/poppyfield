@@ -53,9 +53,9 @@ public class Loader {
                         GisType gf = new GisType();
                         gisTypeL.add(gf.strip(geoJ).stringify().parse(type));
                         Tools.writeToCache(v.getApplication(),gf.getType(),gf.getRawData());
+                        Log.d("WROOM",gf.getRawData().toString());
                         long diff = (System.currentTimeMillis()-t1);
                         Logger.gl().d("PARSE","Parsed "+type+"("+gf.getVersion()+") in "+diff+" millsec");
-                        logPing.setValue("");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -72,7 +72,6 @@ public class Loader {
 
                 }
                 Logger.gl().d("INSERT","DONE.");
-                logPing.setValue("");
 
             },fileList,app,geoJsonFiles);
         },app);
@@ -81,7 +80,6 @@ public class Loader {
         WebLoader.getModule(moduleFile -> {
             if (moduleFile != null) {
                 Logger.gl().d("LOAD", "[Bundle loaded.]");
-                logPing.setValue("");
                 try {
                     Log.d("WORK",moduleFile.toString());
                     wf = new WorkflowBundle().stringify(moduleFile).parse();
@@ -95,7 +93,6 @@ public class Loader {
         WebLoader.getModule(moduleFile -> {
             if (moduleFile != null) {
                 Logger.gl().d("LOAD", "[Spinners loaded.]");
-                logPing.setValue("");
                 try {
                     spinners = new Spinners().strip(moduleFile).parse();
                     mConfigs.add(spinners);
