@@ -38,7 +38,7 @@ android {
 dependencies {
     implementation "org.yaml:snakeyaml:$rootProject.snakeVersion:android"
     implementation "androidx.appcompat:appcompat:$rootProject.appCompatVersion"
-
+    implementation 'com.google.maps.android:android-maps-utils:2.2.3'
     // Dependencies for working with Architecture components
     // You'll probably have to update the version numbers in build.gradle (Project)
 

@@ -1,7 +1,7 @@
 package com.teraime.poppyfield.templates;
 
 import android.Manifest;
-import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,39 +9,29 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContract;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 
-import com.google.android.gms.common.internal.Preconditions;
-import com.google.android.libraries.maps.CameraUpdateFactory;
+import com.google.android.libraries.maps.CameraUpdateFactory;;
 import com.google.android.libraries.maps.GoogleMap;
 import com.google.android.libraries.maps.MapView;
-
 import com.google.android.libraries.maps.OnMapReadyCallback;
-import com.google.android.libraries.maps.model.LatLng;
 import com.google.android.libraries.maps.model.LatLngBounds;
 import com.google.android.material.snackbar.Snackbar;
-import com.teraime.poppyfield.MainActivity;
+import com.google.maps.android.data.geojson.GeoJsonLayer;
 import com.teraime.poppyfield.R;
 import com.teraime.poppyfield.base.Block;
-import com.teraime.poppyfield.base.Constants;
-import com.teraime.poppyfield.gis.Geomatte;
-import com.teraime.poppyfield.gis.PhotoMeta;
-import com.teraime.poppyfield.loader.Loader;
-import com.teraime.poppyfield.loader.LoaderCb;
-import com.teraime.poppyfield.loader.WebLoader;
-import com.teraime.poppyfield.loader.parsers.JGWParser;
+import com.teraime.poppyfield.base.Tools;
 
-import java.text.ParseException;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.List;
 
 public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallback {
@@ -50,24 +40,32 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
     private MapView mMap;
     private String mSource,mName;
     private GoogleMap gMap;
+    private ActivityResultLauncher<String> requestPermission;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
     }
 
+    @SuppressLint("MissingPermission")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         Log.d("v","in oncreate for gismap");
+        requestPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            if (isGranted) {
+                if (model.getMap()!=null)
+                    model.getMap().setMyLocationEnabled(true);
+                Log.d("v", "GRANTED");
+            }
+            else
+                Log.d("v", "REFUSED");
+        });
         View v = super.onCreateView(inflater,container,savedInstanceState,R.layout.template_gis_map);
-        if (model.getMap() == null) {
-            mMap = v.findViewById(R.id.myMap);
-            mMap.onCreate(savedInstanceState);
-            mMap.getMapAsync(this);
-        } else {
 
-        }
+        mMap = v.findViewById(R.id.myMap);
+        mMap.onCreate(savedInstanceState);
+        mMap.getMapAsync(this);
 
         return v;
     }
@@ -78,7 +76,7 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
     }
 
     @Override
-    public void onMapReady(com.google.android.libraries.maps.GoogleMap googleMap) {
+    public void onMapReady(GoogleMap googleMap) {
         model.setMap(googleMap);
         Block gis = model.getSelectedWorkFlow().getBlock(Block.GIS);
         mSource = gis.getAttr("source");
@@ -95,21 +93,14 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         List<Block> gisObjects = model.getSelectedWorkFlow().getBlocksOfType(Block.GIS_POINTS);
         Log.d("v","GETBLOCKSOFTYPE "+model.getSelectedWorkFlow().getBlocksOfType(Block.GIS_LAYER));
 
-        for(Block l: layers) {
-        //LayerDescriptor<String,> ld = new
-
-            Log.d("v","Layer"+l.getAttrs().toString());
-
+        for (Block g: gisObjects) {
+            Log.d("v","Layer"+g.getAttrs().toString());
         }
+
         if (ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.e("google","FAIL ON PERMISSIONS");
-            ActivityResultLauncher<String> requestPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted)
-                    Log.d("v", "GRANTED");
-                else
-                    Log.d("v", "REFUSED");
-            });
+
             if (ActivityCompat.shouldShowRequestPermissionRationale(this.getActivity(),
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
                 // Provide an additional rationale to the user if the permission was not granted
@@ -128,7 +119,7 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
                         .show();
             } else
                 requestPermission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
-                //ActivityCompat.requestPermissions(GisMapTemplate.this.getActivity(), new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            //ActivityCompat.requestPermissions(GisMapTemplate.this.getActivity(), new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             //new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         } else {
             Log.d("SEC",
@@ -140,6 +131,18 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
             Log.d("v",gisObject.getBlockType());
             Log.d("v", gisObject.getAttrs().toString());
 
+        }
+        String s = null;
+        try {
+            s = Tools.readFromCache(this.getContext(),"Traktersb");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            JSONObject geoJsonData = new JSONObject(s);
+            GeoJsonLayer layer = new GeoJsonLayer(googleMap, geoJsonData);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
     }
@@ -172,4 +175,5 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
     public String getName() {
         return this.getTag();
     }
+
 }
