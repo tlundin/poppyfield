@@ -13,12 +13,11 @@ import androidx.lifecycle.ViewModelProvider;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 public abstract class TemplateFragment extends Fragment {
-    private View mView=null;
     protected WorldViewModel model;
     @Nullable
 
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState, int template_id) {
-        mView = inflater.inflate(template_id, container, false);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle _savedInstanceState, int template_id) {
+        View mView = inflater.inflate(template_id, container, false);
         if (model == null)
             model = new ViewModelProvider(requireActivity()).get(WorldViewModel.class);
         return mView;
@@ -26,10 +25,8 @@ public abstract class TemplateFragment extends Fragment {
 
     @Override
     public void onResume() {
-        model.setPage(this,getName());
-        Log.d("RESUME","IN RESUME FOR "+getName());
+        Log.d("LIFECYCLE","IN onResume for "+getName());
         model.getToolBar().setTitle(getName());
-        Log.d("REFFO","In onRESUME: "+this.getActivity().getSupportFragmentManager().getFragments().toString());
         super.onResume();
     }
 

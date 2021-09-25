@@ -28,11 +28,6 @@ public class Loader {
     private Spinners spinners;
     private Table t;
 
-    public static Loader getInstance() {
-        if (instance == null)
-            instance = new Loader();
-        return instance;
-    }
 
     public List<Config<?>> getConfigs() {
         return mConfigs;

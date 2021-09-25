@@ -5,6 +5,11 @@ import android.util.Log;
 
 import androidx.fragment.app.Fragment;
 
+import com.teraime.poppyfield.templates.GISPage;
+import com.teraime.poppyfield.templates.LogScreen;
+import com.teraime.poppyfield.templates.Page;
+import com.teraime.poppyfield.viewmodel.WorldViewModel;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -48,12 +53,21 @@ public class Tools {
 
     }
 
-    public static Fragment createFragment(String templateName) throws ClassNotFoundException {
-        Fragment f;
+    public static Page createPage(WorldViewModel model, String template, Workflow wf) {
+        switch (template) {
+            case "GisMapTemplate":
+                return new GISPage(model,template,wf);
+            default:
+                return new Page(model,template,wf);
+        }
+    }
+
+    public static Fragment createFragment(String templateName)  {
+        Fragment f=null;
         try {
             Class<?> cs = Class.forName(Constants.JAVA_APP_NAME+".templates."+templateName);
             f = (Fragment)cs.newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) { throw new ClassNotFoundException("Failed to create Fragment "+templateName); }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) { Logger.gl().e("Failed to create Fragment "+templateName); }
         return f;
     }
 
@@ -90,5 +104,6 @@ public class Tools {
             return result.toArray(new String[0]);
 
     }
+
 
 }

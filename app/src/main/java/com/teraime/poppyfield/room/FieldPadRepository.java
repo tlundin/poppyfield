@@ -1,6 +1,7 @@
 package com.teraime.poppyfield.room;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
@@ -16,7 +17,6 @@ import com.teraime.poppyfield.gis.PhotoMeta;
 import com.teraime.poppyfield.loader.LoaderCb;
 import com.teraime.poppyfield.loader.WebLoader;
 import com.teraime.poppyfield.loader.parsers.JGWParser;
-import com.teraime.poppyfield.templates.GisMapTemplate;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -103,31 +103,26 @@ public class FieldPadRepository {
         });
     }
 
-    public LiveData<LatLngBounds> getBoundary(GisMapTemplate map, String app) {
-        updateBoundary(map,app);
+    public LiveData<LatLngBounds> getBoundary() {
         return mBoundaries;
     }
 
-    private void updateBoundary(GisMapTemplate map, String app) {
-        if (boundaryMap.get(map)!=null) {
-            mBoundaries.setValue(boundaryMap.get(map));
-        } else {
-            WebLoader.getMapMetaData(new LoaderCb() {
-                @Override
-                public void loaded(List<String> file) {
-                    PhotoMeta p=null;
-                    try {
-                        p = JGWParser.parse(file,919,993);
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                    }
-                    LatLng NE = Geomatte.convertToLatLong(p.E,p.N);
-                    LatLng SW = Geomatte.convertToLatLong(p.W,p.S);
-                    LatLngBounds latLngBounds = new LatLngBounds(SW,NE);
-                    boundaryMap.put(map,latLngBounds);
-                    mBoundaries.setValue(latLngBounds);
+    public void updateBoundary(String app, String metaSource) {
+        WebLoader.getMapMetaData(new LoaderCb() {
+            @Override
+            public void loaded(List<String> file) {
+                PhotoMeta p=null;
+                try {
+                    p = JGWParser.parse(file,919,993);
+                } catch (ParseException e) {
+                    e.printStackTrace();
                 }
-            }, app, map.getMetaSource());
-        }
+                LatLng NE = Geomatte.convertToLatLong(p.E,p.N);
+                LatLng SW = Geomatte.convertToLatLong(p.W,p.S);
+                LatLngBounds latLngBounds = new LatLngBounds(SW,NE);
+                mBoundaries.setValue(latLngBounds);
+                Log.d("vortex","Observer informed");
+            }
+        }, app, metaSource);
     }
 }

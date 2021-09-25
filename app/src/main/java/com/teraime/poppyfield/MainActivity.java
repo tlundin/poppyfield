@@ -1,8 +1,8 @@
 package com.teraime.poppyfield;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -10,24 +10,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
-import com.teraime.poppyfield.base.Block;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
+import com.teraime.poppyfield.base.PageStack;
 import com.teraime.poppyfield.base.Tools;
-import com.teraime.poppyfield.base.WFRunner;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.loader.Configurations.Config;
-import com.teraime.poppyfield.loader.Loader;
-import com.teraime.poppyfield.templates.TemplateFragment;
+import com.teraime.poppyfield.templates.Page;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
-import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     DrawerLayout drawerLayout;
     WorldViewModel model;
     Boolean appEntry = false;
+    DialogInterface.OnClickListener dialogClickListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,35 +48,41 @@ public class MainActivity extends AppCompatActivity {
         drawerLayout = findViewById(R.id.drawerLayout);
         setSupportActionBar(topAppBar);
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
+        PageStack stack = model.getPageStack();
 
-        if (model.getInfocusPage() == null) {
-            appEntry = true;
-            try {
-                Fragment logTVF = Tools.createFragment("LogScreen");
-                setContentView(logTVF, "Boot");
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        } else
-            getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,model.getPage(model.getInfocusPage()),model.getInfocusPage()).commit();
-
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.content_frame,
+                        Tools.createFragment(stack.getInfocusPage().getTemplateType()),
+                        stack.getInfocusPage().getName()).commit();
         final Observer<List<Config<?>>> loadObserver = configs -> {
             if (configs.size() == 4 ) {
                 populateMenu(navi.getMenu(), model);
                 Logger.gl().d("MORTIS", "DONE");
-                if (appEntry) {
-                    drawerLayout.openDrawer(GravityCompat.START);
-                }
+                drawerLayout.openDrawer(GravityCompat.START);
             }
         };
         model.getMyConf().observe(this,
                 loadObserver);
 
+        final Observer<List<Page>> pageObserver = pages -> {
+            if (stack.hasNewPage()) {
+                Log.d("velcro","Adding");
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.content_frame,
+                                Tools.createFragment(stack.getInfocusPage().getTemplateType()),
+                                stack.getInfocusPage().getName())
+                        .commit();
+            } else {
+                Log.d("v","Popping");
+                getSupportFragmentManager().popBackStack();
+            }
+        };
+        stack.getPageLive().observe(this,pageObserver);
     }
 
 
     private void populateMenu(Menu menu, WorldViewModel model) {
-        Workflow main = Loader.getInstance().getBundle().getMainWf();
+        Workflow main = model.getWorkFlowBundle().getMainWf();
         menuDescriptor = new MenuDescriptor(main.getBlocks());
         List<MenuDescriptor.MenuItem> menuTopology = menuDescriptor.getMenu();
         int orderIdx = 101;
@@ -97,29 +100,7 @@ public class MainActivity extends AppCompatActivity {
                     MenuItem entry = menu.add(R.id.wf_group, itemId++, orderIdx++, elem.get("target"));
                     entry.setOnMenuItemClickListener(item1 -> {
                         Log.d("VOOF",elem.get("target"));
-                        Workflow wf = Loader.getInstance().getBundle().getWf(elem.get("target"));
-                        Log.d("v","WF has"+wf.getBlocks().size()+" blocks");
-                        String template="NONE";
-                        try {
-                            template = wf.getTemplate();
-                        } catch (ParseException pe) {
-                            Logger.gl().d("RUNTIME","Cannot open the workflow "+wf.getName()+". Missing type argument in PageDefine block");
-                        }
-                        Log.d("v","Template "+template);
-                        model.setSelectedWorkFlow(wf);
-                        //Check what template is required.
-                        //TODO: Remove - make sure correct template used.
-                        if (wf.hasBlock(Block.GIS)) {
-                            Log.d("WARNING","Wrong template used - GIS blocks requires GisMapTemplate..substituting");
-                            template = "GisMapTemplate";
-                        }
-                        try {
-                            Fragment templateF = Tools.createFragment(template);
-                            setContentView(templateF,wf.getName());
-
-                        } catch (ClassNotFoundException e) {
-                            Logger.gl().e(e.getMessage());
-                        }
+                        model.getPageStack().changePage(elem.get("target"));
                         drawerLayout.closeDrawer(GravityCompat.START);
                         return true;
                     });
@@ -129,15 +110,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setContentView(Fragment templateF, String name) {
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft
-                .replace(R.id.content_frame, templateF,name)
-                .addToBackStack(name)
-                .commit();
-        model.setPage(templateF,name);
-        Log.d("REFFO","In SETCONTENT: "+getSupportFragmentManager().getFragments().toString());
+    @Override
+    public void onBackPressed() {
+        Log.d("v","BACK PRESSED");
+        model.getPageStack().pop();
     }
-
 
 }

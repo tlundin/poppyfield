@@ -4,6 +4,13 @@ import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Paths;
 import java.util.List;
 
 
@@ -11,7 +18,59 @@ public class Geomatte {
 	private final static double d2r = (Math.PI / 180.0);
 	//calculate haversine distance for linear distance
 
+	public static String convert(File source) throws FileNotFoundException {
+		StringBuilder result = new StringBuilder();
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(source)));
+		boolean geoLines = false;
+		String xE = null, Ny = null;
+		try {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (line.contains("properties"))
+					geoLines = false;
+				if (geoLines) {
+					if (isCoord(line)) {
+						if (xE == null) {
+							if (line.trim().equals("0.0"))
+								continue;
+							xE = line;
+						} else if (Ny == null) {
+							Ny = line;
+							double n, e;
+							n = Double.parseDouble(Ny.trim().replace(",", ""));
+							e = Double.parseDouble(xE.trim().replace(",", ""));
+							xE = null;
+							Ny = null;
+							LatLng ll = Geomatte.convertToLatLong(e, n);
+							String lng = "           " + ll.longitude + ",";
+							String lat = "           " + ll.latitude;
+							result.append(lng);
+							result.append(lat);
+						}
+					} else
+						result.append(line);
 
+				} else {
+					if (line.contains("coordinates"))
+						geoLines = true;
+					result.append(line);
+				}
+			}
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return result.toString();
+	}
+	private static boolean isCoord(String line) {
+		String p = line.trim();
+		if (p.length()==0)
+			return false;
+		boolean isLine = Character.isDigit(p.toCharArray()[0]);
+		//Log.d("google",line+" is a coord: "+isLine);
+		return Character.isDigit(p.toCharArray()[0]);
+	}
 	public static double dist(double lat1, double long1, double lat2, double long2)
 	{
 		double dlong = (long2 - long1) * d2r;

@@ -29,10 +29,6 @@ public class DefaultNoScrollTemplate extends TemplateFragment {
 	@Nullable
 	@Override
 	public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-		for (Block b:model.getSelectedWorkFlow().getBlocks()) {
-			Log.d("v", b.getBlockType() + " attr");
-			Log.d("v", b.getAttrs().toString());
-		}
 		return super.onCreateView(inflater,container,savedInstanceState,R.layout.template_wf_default_no_scroll);
 	}
 
