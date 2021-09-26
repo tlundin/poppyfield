@@ -1,5 +1,6 @@
 package com.teraime.poppyfield.viewmodel;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -31,7 +32,7 @@ public class WorldViewModel extends AndroidViewModel {
     private final LiveData<List<VariableTable>> mVariables;
     private final String app;
     private GoogleMap mMap;
-
+    private Application mActivity;
     private MaterialToolbar topAppBar;
     private PageStack mPageStack;
     private final Loader mLoader;
@@ -47,6 +48,7 @@ public class WorldViewModel extends AndroidViewModel {
         this.app=prefs.getString("App","smabio");
         cachePath = application.getFilesDir().getPath();
         mLoader.load(app,this);
+        mActivity=application;
     }
 
     public String getApp() { return app; }
@@ -98,5 +100,8 @@ public class WorldViewModel extends AndroidViewModel {
     public String getCacheFolder() {
         return cachePath;
     }
+
+    public Application getActivity() { return mActivity; }
+
 }
 

@@ -50,9 +50,11 @@ public class PageStack {
         Page oldP = getInfocusPage();
         mStack.add(newP);
         if (!template.equals(oldP.getTemplateType())) {
+            Log.d("Frags-new",mStack.toString());
             hasNewPage=true;
             mPageLiveD.setValue(mStack);
         } else {
+            Log.d("Frags-old",mStack.toString());
             newP.onCreate(oldP.getFragment());
             newP.reload();
         }
@@ -84,8 +86,8 @@ public class PageStack {
             hasNewPage = false;
             mPageLiveD.setValue(mStack);
         } else {
-            Log.d("v","mstack: "+mStack.toString());
-            Log.d("focus","focus "+getInfocusPage().getName());
+            Log.d("Frags","mstack: "+mStack.toString());
+            Log.d("Frags","focus "+getInfocusPage().getName());
             getInfocusPage().reload();
         }
 

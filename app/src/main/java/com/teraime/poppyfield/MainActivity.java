@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
                 .replace(R.id.content_frame,
                         Tools.createFragment(stack.getInfocusPage().getTemplateType()),
                         stack.getInfocusPage().getName()).commit();
+        Log.d("Frags",getSupportFragmentManager().getFragments().toString());
         final Observer<List<Config<?>>> loadObserver = configs -> {
             if (configs.size() == 4 ) {
                 populateMenu(navi.getMenu(), model);
@@ -71,10 +72,17 @@ public class MainActivity extends AppCompatActivity {
                         .replace(R.id.content_frame,
                                 Tools.createFragment(stack.getInfocusPage().getTemplateType()),
                                 stack.getInfocusPage().getName())
+                        .addToBackStack(stack.getInfocusPage().getName())
                         .commit();
+                Log.d("Frags",getSupportFragmentManager().getFragments().toString());
             } else {
                 Log.d("v","Popping");
+                Log.d("Frags-popb",getSupportFragmentManager().getFragments().toString());
                 getSupportFragmentManager().popBackStack();
+                List<Fragment> fs = getSupportFragmentManager().getFragments();
+                Log.d("Frags-popa",fs.toString());
+                //getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,fs.get(fs.size()-1),stack.getInfocusPage().getName());
+
             }
         };
         stack.getPageLive().observe(this,pageObserver);
