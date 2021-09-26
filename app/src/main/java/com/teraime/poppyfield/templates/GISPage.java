@@ -79,7 +79,10 @@ public class GISPage extends Page {
             GeoJsonLayer gl = new GeoJsonLayer(googleMap, geoJsonData);
             fillPolygons(gl);
             gl.addLayerToMap();
-            gl.setOnFeatureClickListener((GeoJsonLayer.GeoJsonOnFeatureClickListener) feature -> Log.d("v", feature.getProperties().toString()));
+            gl.setOnFeatureClickListener((GeoJsonLayer.GeoJsonOnFeatureClickListener) feature -> {
+                Log.d("v", feature.getProperties().toString());
+
+            });
 
         } catch (JSONException | FileNotFoundException e) {
             e.printStackTrace();
