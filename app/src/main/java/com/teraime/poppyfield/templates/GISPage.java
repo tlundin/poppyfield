@@ -69,7 +69,9 @@ public class GISPage extends Page {
 
             Log.d("v", gisObject.getBlockType());
             Log.d("v", gisObject.getAttrs().toString());
-
+            String obj_context = gisObject.getAttr("obj_context");
+            labelE = Expressor.preCompileExpression(label);
+            objContextE = Expressor.preCompileExpression(objectContext);
         }
 
         try {
@@ -80,8 +82,9 @@ public class GISPage extends Page {
             fillPolygons(gl);
             gl.addLayerToMap();
             gl.setOnFeatureClickListener((GeoJsonLayer.GeoJsonOnFeatureClickListener) feature -> {
+                Log.d("flutter", "HEPP");
                 Log.d("v", feature.getProperties().toString());
-
+                //model.getPageStack().changePage(elem.get("target"));
             });
 
         } catch (JSONException | FileNotFoundException e) {
@@ -112,7 +115,7 @@ public class GISPage extends Page {
                 Bitmap bmp = icg.makeIcon(feature.getProperty("TRAKT"));
                 GeoJsonPointStyle gp = new GeoJsonPointStyle();
                 gp.setIcon(BitmapDescriptorFactory.fromBitmap(bmp));
-                gp.setTitle("Trakt");
+                //gp.setTitle("French Mc Cheeze");
                 feature.setPointStyle(gp);
             }
         }

@@ -33,6 +33,8 @@ public class Table {
         myColumns = columnNames;
     }
 
+
+
     public ErrCode addRow(List<String> rowEntries) {
         int index=0;
         if (rowEntries == null||rowEntries.size()==0)
@@ -82,5 +84,18 @@ public class Table {
         }
 
         return ErrCode.ok;
+    }
+    public ArrayList<String> getColumnRealNames() {
+        return keyParts;
+    }
+
+    public void printTable() {
+        Log.d("vortex",myColumns.toString());
+        for (Integer key:rowTable.keySet()) {
+            List<String> l = rowTable.get(key);
+            Log.d("vortex","Row: "+key+":");
+            Log.d("vortex",l.toString());
+        }
+
     }
 }

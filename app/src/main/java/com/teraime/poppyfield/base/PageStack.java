@@ -18,7 +18,8 @@ public class PageStack {
     final List<Page> mStack;
     final WorldViewModel model;
     final MutableLiveData<List<Page>> mPageLiveD;
-    boolean hasNewPage = false;
+    public enum EventTypes { NONE, NEW_PAGE, POP};
+    private EventTypes mEvent;
 
     public PageStack(WorldViewModel world) {
         mStack = new ArrayList<>();
@@ -26,7 +27,7 @@ public class PageStack {
         mPageLiveD = new MutableLiveData<>(mStack);
         Log.d("v","Bootpage added");
         mStack.add(Tools.createPage(model,"LogScreen",null));
-        mPageLiveD.setValue(mStack);
+        mEvent = EventTypes.NEW_PAGE;
     }
 
     public void changePage(String target) {
@@ -51,7 +52,7 @@ public class PageStack {
         mStack.add(newP);
         if (!template.equals(oldP.getTemplateType())) {
             Log.d("Frags-new",mStack.toString());
-            hasNewPage=true;
+            mEvent = EventTypes.NEW_PAGE;
             mPageLiveD.setValue(mStack);
         } else {
             Log.d("Frags-old",mStack.toString());
@@ -69,29 +70,31 @@ public class PageStack {
         return mPageLiveD;
     }
 
-    public boolean hasNewPage() {
-        return hasNewPage;
-    }
-
     //If false, no pop. Ask user if he wants to exit the app.
     public void pop() {
         if (mStack.size()==1) {
             Log.d("v","stack empty");
             return;
         }
+
         Page infocusPage = getInfocusPage();
         Page previousPage = mStack.get(mStack.size()-2);
         mStack.remove(mStack.size()-1);
         if (!previousPage.getTemplateType().equals(infocusPage.getTemplateType())) {
-            hasNewPage = false;
+            mEvent = EventTypes.POP;
+            Log.d("Frags","Pop - different Fragment type. Infocus: "+getInfocusPage().getName()+" previous: "+previousPage.getName());
             mPageLiveD.setValue(mStack);
         } else {
-            Log.d("Frags","mstack: "+mStack.toString());
-            Log.d("Frags","focus "+getInfocusPage().getName());
+            Log.d("Frags","Pop - same Fragment type. Infocus: "+getInfocusPage().getName()+" previous: "+previousPage.getName());
             getInfocusPage().reload();
         }
 
     }
 
 
+    public EventTypes consumeEvent() {
+        EventTypes ret = mEvent;
+        mEvent = EventTypes.NONE;
+        return ret;
+    }
 }

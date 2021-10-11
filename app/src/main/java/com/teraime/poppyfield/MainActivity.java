@@ -29,11 +29,10 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    MenuDescriptor menuDescriptor = null;
+
     MaterialToolbar topAppBar;
     DrawerLayout drawerLayout;
     WorldViewModel model;
-    Boolean appEntry = false;
     DialogInterface.OnClickListener dialogClickListener;
 
     @Override
@@ -41,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout);
         model = new ViewModelProvider(this).get(WorldViewModel.class);
+
+
         final NavigationView navi = findViewById(R.id.nav);
         navi.setItemIconTintList(null);
         topAppBar = this.findViewById(R.id.topAppBar);
@@ -50,48 +51,49 @@ public class MainActivity extends AppCompatActivity {
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         PageStack stack = model.getPageStack();
 
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.content_frame,
-                        Tools.createFragment(stack.getInfocusPage().getTemplateType()),
-                        stack.getInfocusPage().getName()).commit();
-        Log.d("Frags",getSupportFragmentManager().getFragments().toString());
+        //getSupportFragmentManager().beginTransaction()
+        //        .replace(R.id.content_frame,
+        //                Tools.createFragment(stack.getInfocusPage().getTemplateType()),
+        //                stack.getInfocusPage().getName()).commit();
+        //Log.d("Frags-oc",getSupportFragmentManager().getFragments().toString());
+        //Log.d("Frags","Created fragment "+stack.getInfocusPage().getName());
         final Observer<List<Config<?>>> loadObserver = configs -> {
             if (configs.size() == 4 ) {
-                populateMenu(navi.getMenu(), model);
+                populateMenu(navi.getMenu(), model.getMenuDescriptor());
                 Logger.gl().d("MORTIS", "DONE");
-                drawerLayout.openDrawer(GravityCompat.START);
+                if (model.isAppEntry())
+                    drawerLayout.openDrawer(GravityCompat.START);
             }
         };
-        model.getMyConf().observe(this,
-                loadObserver);
+
 
         final Observer<List<Page>> pageObserver = pages -> {
-            if (stack.hasNewPage()) {
-                Log.d("velcro","Adding");
+
+            PageStack.EventTypes event = stack.consumeEvent();
+            if (event == PageStack.EventTypes.NEW_PAGE) {
+                Log.d("Frags","Adding");
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.content_frame,
                                 Tools.createFragment(stack.getInfocusPage().getTemplateType()),
                                 stack.getInfocusPage().getName())
                         .addToBackStack(stack.getInfocusPage().getName())
                         .commit();
-                Log.d("Frags",getSupportFragmentManager().getFragments().toString());
-            } else {
-                Log.d("v","Popping");
-                Log.d("Frags-popb",getSupportFragmentManager().getFragments().toString());
+                Log.d("Frags-np",getSupportFragmentManager().getFragments().toString());
+            } else if (event == PageStack.EventTypes.POP) {
+                Log.d("Frags","Popping");
                 getSupportFragmentManager().popBackStack();
                 List<Fragment> fs = getSupportFragmentManager().getFragments();
                 Log.d("Frags-popa",fs.toString());
-                //getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,fs.get(fs.size()-1),stack.getInfocusPage().getName());
-
+            } else {
+                Log.d("Frags","EventType: "+event.name());
             }
         };
         stack.getPageLive().observe(this,pageObserver);
+        model.getMyConf().observe(this, loadObserver);
     }
 
 
-    private void populateMenu(Menu menu, WorldViewModel model) {
-        Workflow main = model.getWorkFlowBundle().getMainWf();
-        menuDescriptor = new MenuDescriptor(main.getBlocks());
+    private void populateMenu(Menu menu, MenuDescriptor menuDescriptor) {
         List<MenuDescriptor.MenuItem> menuTopology = menuDescriptor.getMenu();
         int orderIdx = 101;
         int itemId = 2;
@@ -107,7 +109,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("KOOK",item.mElems.toString());
                     MenuItem entry = menu.add(R.id.wf_group, itemId++, orderIdx++, elem.get("target"));
                     entry.setOnMenuItemClickListener(item1 -> {
-                        Log.d("VOOF",elem.get("target"));
                         model.getPageStack().changePage(elem.get("target"));
                         drawerLayout.closeDrawer(GravityCompat.START);
                         return true;

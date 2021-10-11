@@ -6,10 +6,12 @@ import android.util.Log;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.sqlite.db.SimpleSQLiteQuery;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.teraime.poppyfield.base.Logger;
+import com.teraime.poppyfield.base.Variable;
 import com.teraime.poppyfield.gis.Geomatte;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
@@ -124,5 +126,28 @@ public class FieldPadRepository {
                 Log.d("vortex","Observer informed");
             }
         }, app, metaSource);
+    }
+    private StringBuilder queryBase;
+    public void buildQueryFromMap(Map<String,String> wfKeyMap) {
+        queryBase = new StringBuilder();
+        queryBase.append("SELECT value FROM variabler WHERE ");
+        for (String k:wfKeyMap.keySet()) {
+            String v = wfKeyMap.get(k);
+            queryBase.append(k);
+            queryBase.append(" = ");
+            queryBase.append(v);
+            queryBase.append(" AND ");
+        }
+
+        Log.d("queryBase", queryBase.toString());
+    }
+    public String latestMatch(String varName) {
+        String queryString = queryBase.toString+("var = "+varName);
+        SimpleSQLiteQuery query = new SimpleSQLiteQuery(queryString);
+        return mVDao.latestMatch(query).getValue();
+    }
+
+    public Variable latestMatch(SimpleSQLiteQuery query) {
+        return new Variable(mVDao.latestMatch(query));
     }
 }

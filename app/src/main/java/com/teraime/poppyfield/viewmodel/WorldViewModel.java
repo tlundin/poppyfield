@@ -4,15 +4,20 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.sqlite.db.SimpleSQLiteQuery;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.teraime.poppyfield.base.Expressor;
+import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
+import com.teraime.poppyfield.base.Variable;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.loader.Configurations.Config;
@@ -22,12 +27,14 @@ import com.teraime.poppyfield.room.FieldPadRepository;
 import com.teraime.poppyfield.room.VariableTable;
 
 import java.util.List;
+import java.util.Map;
 
 public class WorldViewModel extends AndroidViewModel {
 
     private final FieldPadRepository mRepository;
     private final LiveData<List<Config<?>>> myConf;
     private final String cachePath;
+    private final Expressor mExpressor;
     private List<String> mManifest;
     private final LiveData<List<VariableTable>> mVariables;
     private final String app;
@@ -36,6 +43,9 @@ public class WorldViewModel extends AndroidViewModel {
     private MaterialToolbar topAppBar;
     private PageStack mPageStack;
     private final Loader mLoader;
+    private MenuDescriptor mMenuDescriptor;
+    private boolean appEntry = true;
+
 
     public WorldViewModel(Application application) {
         super(application);
@@ -48,6 +58,7 @@ public class WorldViewModel extends AndroidViewModel {
         this.app=prefs.getString("App","smabio");
         cachePath = application.getFilesDir().getPath();
         mLoader.load(app,this);
+        mExpressor = Expressor.create(this);
         mActivity=application;
     }
 
@@ -103,5 +114,20 @@ public class WorldViewModel extends AndroidViewModel {
 
     public Application getActivity() { return mActivity; }
 
+    public MenuDescriptor getMenuDescriptor() {
+        if (mMenuDescriptor == null)
+            mMenuDescriptor = new MenuDescriptor(getWorkFlowBundle().getMainWf().getBlocks());
+        else
+            appEntry=false;
+        return mMenuDescriptor;
+    }
+
+    public boolean isAppEntry() {return appEntry;}
+
+
+
+    public String latestMatch(String varName) {
+        return mRepository.latestMatch(varName);
+    }
 }
 

@@ -5,6 +5,8 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.RawQuery;
+import androidx.sqlite.db.SimpleSQLiteQuery;
 
 import java.util.List;
 
@@ -24,4 +26,7 @@ public interface VariableDAO {
 
     @Query("DELETE FROM variabler where year=='H'")
     void deleteAllHistorical();
+
+    @RawQuery
+    VariableTable latestMatch(SimpleSQLiteQuery query);
 }

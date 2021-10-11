@@ -52,7 +52,7 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.d("GIS","Oncreate for Map");
+        Log.d("GIS","Oncreate for Map "+((Object)this).toString());
         View v = super.onCreateView(inflater,container,savedInstanceState,R.layout.template_gis_map);
         mPage = (GISPage)model.getPageStack().getInfocusPage();
         assert v!=null;
@@ -68,9 +68,12 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         mMap = v.findViewById(R.id.myMap);
         mMap.onCreate(savedInstanceState);
         mMap.getMapAsync(this);
-
-
         mPage.onCreate(this);
+        mMap = v.findViewById(R.id.myMap);
+        mMap.onCreate(savedInstanceState);
+        mMap.getMapAsync(this);
+        mPage.onCreate(this);
+
         return v;
     }
 
@@ -119,7 +122,12 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
 
     @Override
     public void onDestroy() {
-        mMap.onDestroy();
+        if (mMap !=null) {
+            mMap.onDestroy();
+            mMap = null;
+
+        } else
+            Log.d("destroy","mMap null");
         super.onDestroy();
     }
 
