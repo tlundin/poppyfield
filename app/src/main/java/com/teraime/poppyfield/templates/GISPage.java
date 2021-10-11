@@ -70,8 +70,8 @@ public class GISPage extends Page {
             Log.d("v", gisObject.getBlockType());
             Log.d("v", gisObject.getAttrs().toString());
             String obj_context = gisObject.getAttr("obj_context");
-            labelE = Expressor.preCompileExpression(label);
-            objContextE = Expressor.preCompileExpression(objectContext);
+           // labelE = Expressor.preCompileExpression(label);
+           // objContextE = Expressor.preCompileExpression(objectContext);
         }
 
         try {

@@ -142,7 +142,7 @@ public class FieldPadRepository {
         Log.d("queryBase", queryBase.toString());
     }
     public String latestMatch(String varName) {
-        String queryString = queryBase.toString+("var = "+varName);
+        String queryString = queryBase.toString()+("var = "+varName);
         SimpleSQLiteQuery query = new SimpleSQLiteQuery(queryString);
         return mVDao.latestMatch(query).getValue();
     }
