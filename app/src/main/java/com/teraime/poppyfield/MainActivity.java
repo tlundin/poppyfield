@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
                 Logger.gl().d("MORTIS", "DONE");
                 if (model.isAppEntry())
                     drawerLayout.openDrawer(GravityCompat.START);
+                model.prepareGeoData();
             }
         };
 
