@@ -2,7 +2,6 @@ package com.teraime.poppyfield.base;
 
 import android.util.Log;
 
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
@@ -31,8 +30,10 @@ public class PageStack {
     }
 
     public void changePage(String target) {
+        Log.d("PAGESTACK",target);
         Workflow wf = model.getWorkFlowBundle().getWf(target);
-        Log.d("v","WF has"+wf.getBlocks().size()+" blocks");
+        Logger.gl().d("CHANGEPAGE",wf.getName()+" CONTEXT "+wf.getContext());
+        model.setCurrentWorkFlowContext(wf.getContext());
         String template=null;
         try {
             template = wf.getTemplate();

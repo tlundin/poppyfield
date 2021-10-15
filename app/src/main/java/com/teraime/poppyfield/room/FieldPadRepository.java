@@ -1,6 +1,7 @@
 package com.teraime.poppyfield.room;
 
 import android.app.Application;
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import androidx.fragment.app.Fragment;
@@ -12,16 +13,19 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.teraime.poppyfield.base.DBHelper;
 import com.teraime.poppyfield.base.Logger;
+import com.teraime.poppyfield.base.S;
 import com.teraime.poppyfield.base.Variable;
 import com.teraime.poppyfield.gis.Geomatte;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.gis.PhotoMeta;
 import com.teraime.poppyfield.loader.Configurations.GisType;
+import com.teraime.poppyfield.loader.ImgLoaderCb;
 import com.teraime.poppyfield.loader.LoaderCb;
 import com.teraime.poppyfield.loader.WebLoader;
 import com.teraime.poppyfield.loader.parsers.JGWParser;
 
+import java.io.File;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +38,8 @@ public class FieldPadRepository {
     private final VariableDAO mVDao;
     private final LiveData<List<VariableTable>> allVars;
     private final MutableLiveData<LatLngBounds> mBoundaries;
-    private final Map<Fragment,LatLngBounds> boundaryMap;
+    private final Map<Fragment, LatLngBounds> boundaryMap;
+
     // Note that in order to unit test the WordRepository, you have to remove the Application
     // dependency. This adds complexity and much more code, and this sample is not about testing.
     // See the BasicSample in the android-architecture-components repository at
@@ -79,89 +84,111 @@ public class FieldPadRepository {
     }
 
     public void updateBoundary(String app, String metaSource) {
-        WebLoader.getMapMetaData(new LoaderCb() {
+
+        WebLoader.getImage(new ImgLoaderCb() {
             @Override
-            public void loaded(List<String> file) {
-                PhotoMeta p=null;
-                try {
-                    p = JGWParser.parse(file,919,993);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-                LatLng NE = Geomatte.convertToLatLong(p.E,p.N);
-                LatLng SW = Geomatte.convertToLatLong(p.W,p.S);
-                LatLngBounds latLngBounds = new LatLngBounds(SW,NE);
-                mBoundaries.setValue(latLngBounds);
-                Log.d("vortex","Observer informed");
+            public void loaded(Bitmap bmp) {
+                WebLoader.getMapMetaData(new LoaderCb() {
+                    @Override
+                    public void loaded(List<String> file) {
+                        if (file != null) {
+                            PhotoMeta p = null;
+                            try {
+                                p = JGWParser.parse(file, bmp.getWidth(), bmp.getHeight());
+                                LatLng NE = Geomatte.convertToLatLong(p.E, p.N);
+                                LatLng SW = Geomatte.convertToLatLong(p.W, p.S);
+                                LatLngBounds latLngBounds = new LatLngBounds(SW, NE);
+                                mBoundaries.setValue(latLngBounds);
+                                Log.d("vortex", "Observer informed");
+                            } catch (ParseException e) {
+                                Logger.gl().e("Corrupted JGW metadata");
+                            }
+                        } else
+                            Logger.gl().d("JGW", "No image metadata for " + metaSource);
+                    }
+                }, app, metaSource);
+
             }
         }, app, metaSource);
-    }
-    private StringBuilder queryBase;
-    public void buildQueryFromMap(Map<String,String> wfKeyMap) {
-        queryBase = new StringBuilder();
-        queryBase.append("SELECT value FROM variabler WHERE ");
-        for (String k:wfKeyMap.keySet()) {
-            String v = wfKeyMap.get(k);
-            queryBase.append(k);
-            queryBase.append(" = ");
-            queryBase.append(v);
-            queryBase.append(" AND ");
-        }
+        };
 
+
+
+
+
+    public StringBuilder buildQueryBaseFromMap(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate) {
+        StringBuilder queryBase = new StringBuilder();
+        queryBase.append("SELECT value FROM variabler WHERE ");
+        if (wfKeyMap != null) {
+            for (String k : wfKeyMap.keySet()) {
+                String v = wfKeyMap.get(k);
+                queryBase.append(colTranslate.ToDB(k));
+                queryBase.append(" = ");
+                queryBase.append(v);
+                queryBase.append(" AND ");
+            }
+        }
         Log.d("queryBase", queryBase.toString());
+        return queryBase;
     }
-    public String latestMatch(String varName) {
-        String queryString = queryBase.toString()+("var = "+varName);
+
+    public String latestMatchValue(String queryString) {
         SimpleSQLiteQuery query = new SimpleSQLiteQuery(queryString);
         return mVDao.latestMatch(query).getValue();
     }
 
-    public Variable latestMatch(SimpleSQLiteQuery query) {
-        return new Variable(mVDao.latestMatch(query));
+    public VariableTable latestMatchVariable(String queryString) {
+        SimpleSQLiteQuery query = new SimpleSQLiteQuery(queryString);
+        return mVDao.latestMatch(query);
     }
 
     public void insertGisObjects(List<GisType> geoData, DBHelper.ColTranslate colTranslator) {
-        ((Runnable) () -> {
-            try {
-                for (GisType gisType : geoData) {
-                    long t1 = System.currentTimeMillis();
-                    List<GisObject> geo = gisType.getGeoObjects();
-                    for (GisObject g : geo)
-                        insertGisObject(g, colTranslator);
-                    long diff = (System.currentTimeMillis() - t1);
-                    Logger.gl().d("INSERT", "Inserted " + geo.size() + " " + gisType.getType() + " in " + diff + " millsec");
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    for (GisType gisType : geoData) {
+                        long t1 = System.currentTimeMillis();
+                        List<GisObject> geo = gisType.getGeoObjects();
+                        for (GisObject g : geo)
+                            insertGisObject(g, colTranslator);
+                        long diff = (System.currentTimeMillis() - t1);
+                        Logger.gl().d("TIME", "Inserted " + geo.size() + " " + gisType.getType() + " in " + diff + " millsec");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }).run();
 
-    }
-    private void insertGisObject(GisObject g,DBHelper.ColTranslate colTranslator) {
-        Map<String,String> am = new HashMap<>();
-        String var=GisConstants.GPS_Coord_Var_Name,value=g.coordsToString(),year="H";
-        String colName;
-        for(String key:g.getKeys().keySet()) {
-            colName= colTranslator.ToDB(key);
-            if (colName==null)
-                Logger.gl().e("missing key "+key);
-            else
-                am.put(colName,g.getKeys().get(key));
-        }
-        VariableTable vt = new VariableTable(0,am.get("UUID"),year,var,value,null,null,-1,am.get("L1"),am.get("L2"),am.get("L3"),am.get("L4"),am.get("L5"),am.get("L6"),am.get("L7"),am.get("L8"),am.get("L9"),am.get("L10"));
-        insert(vt);
-        //insert all attributes.
-        Map<String, String> attr = g.getAttributes();
-        Set<String> wanted = new HashSet<String>();
-        wanted.add("geotype");
-        wanted.add("gistyp");
-        wanted.add("objektid");
-        wanted.add("subgistyp");
-        for (String key:attr.keySet()) {
-            if (wanted.contains(key)) {
-                vt = new VariableTable(0,am.get("UUID"),year,key,attr.get(key),null,null,-1,am.get("L1"),am.get("L2"),am.get("L3"),am.get("L4"),am.get("L5"),am.get("L6"),am.get("L7"),am.get("L8"),am.get("L9"),am.get("L10"));
+            private void insertGisObject(GisObject g, DBHelper.ColTranslate colTranslator) {
+                Map<String, String> am = new HashMap<>();
+                String var = GisConstants.GPS_Coord_Var_Name, value = g.coordsToString(), year = "H";
+                String colName;
+                for (String key : g.getKeys().keySet()) {
+                    colName = colTranslator.ToDB(key);
+                    if (colName == null)
+                        Logger.gl().e("missing key " + key);
+                    else
+                        am.put(colName, g.getKeys().get(key));
+                }
+                VariableTable vt = new VariableTable(0, am.get("UUID"), year, var, value, null, null, -1, am.get("L1"), am.get("L2"), am.get("L3"), am.get("L4"), am.get("L5"), am.get("L6"), am.get("L7"), am.get("L8"), am.get("L9"), am.get("L10"));
                 insert(vt);
+                //insert all attributes.
+                Map<String, String> attr = g.getAttributes();
+                Set<String> wanted = new HashSet<String>();
+                wanted.add("geotype");
+                wanted.add("gistyp");
+                wanted.add("objektid");
+                wanted.add("subgistyp");
+                for (String key : attr.keySet()) {
+                    if (wanted.contains(key)) {
+                        vt = new VariableTable(0, am.get("UUID"), year, key, attr.get(key), null, null, -1, am.get("L1"), am.get("L2"), am.get("L3"), am.get("L4"), am.get("L5"), am.get("L6"), am.get("L7"), am.get("L8"), am.get("L9"), am.get("L10"));
+                        insert(vt);
+                    }
+                }
             }
-        }
+
+        }.run();
+
     }
 }

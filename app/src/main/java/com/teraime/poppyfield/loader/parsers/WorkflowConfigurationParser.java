@@ -18,6 +18,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class WorkflowConfigurationParser {
 
@@ -124,7 +125,7 @@ public class WorkflowConfigurationParser {
 
     private static Block createBlock(String blockName, XmlPullParser parser) throws IOException, XmlPullParserException {
         Log.d("v","Creating block "+blockName);
-        Map<String,String> attrs = new HashMap<>();
+        Map<String,String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         String id=null;
         parser.require(XmlPullParser.START_TAG, null,blockName);
         while (parser.next() != XmlPullParser.END_TAG) {

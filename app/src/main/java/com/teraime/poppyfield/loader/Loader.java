@@ -18,17 +18,21 @@ import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class Loader {
 
     private final List<Config<?>> mConfigs = new ArrayList<>();
     private final List<GisType> geoDataConfigs = new ArrayList<>();
     private final MutableLiveData<String> logPing = new MutableLiveData<>();
+    private final Map<String,List<GisObject>> geoConfigMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private WorkflowBundle wf;
     private Spinners spinners;
     private Table t;
     private WorldViewModel mWorld;
     private String mApp;
+
 
 
     public List<Config<?>> getConfigs() {
@@ -68,6 +72,7 @@ public class Loader {
                         GisType gf = new GisType();
                         geoDataConfigs.add(gf.strip(geoJ).stringify().parse(type));
                         Tools.writeToCache(mWorld.getApplication(), gf.getType(), gf.getRawData());
+                        geoConfigMap.put(type,gf.getGeoObjects());
                         Log.d("WROOM", gf.getRawData().toString());
                         long diff = (System.currentTimeMillis() - t1);
                         Logger.gl().d("PARSE", "Parsed " + type + "(" + gf.getVersion() + ") in " + diff + " millsec");
@@ -163,4 +168,10 @@ public class Loader {
         return geoDataConfigs;
     }
     public MutableLiveData<String> getLogObservable() { return logPing;   }
+
+    public List<GisObject> getGeoDataType(String type) {
+        return geoConfigMap.get(type);
+    }
+
+
 }

@@ -11,6 +11,7 @@ public class Workflow {
 
     final List<Block> blocks;
     final Map<String, List<Block>> blockM;
+    final List<Expressor.EvalExpr> mContext;
 
 
     public Workflow(List<Block> _blocks) {
@@ -22,29 +23,32 @@ public class Workflow {
                 blockM.put(type, new ArrayList<>());
             blockM.get(type).add(b);
         }
+        String context = blocks.get(0).mAttrs.get("context");
+            mContext = Expressor.gl().preCompileExpression(context);
+        if (context != null)
+            Log.d("CHANGEPAGE",context+" FOR "+this.getName());
+        else
+            Log.d("CHANGEPAGE","NULL CONTEXT FOR "+this.getName());
     }
 
     public String getName() {
+        Log.d("ATTRS",blocks.get(0).getAttrs().toString());
         return blocks.get(0).mAttrs.get("workflowname");
     }
 
+    public List<Expressor.EvalExpr> getContext() { return mContext; }
     public List<Block> getBlocks() {
         return blocks;
     }
-
     public List<Block> getBlocksOfType(String type) {
         return blockM.get(type);
     }
-
-
     public Block getBlock(String blockType) {
         return blockM.get(blockType).get(0);
     }
-
     public boolean hasBlock(String blockType) {
         return blockM.get(blockType) != null;
     }
-
     public String getTemplate() throws ParseException {
         try {
             return getBlock("block_define_page").getAttrs().get("type");

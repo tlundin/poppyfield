@@ -10,8 +10,9 @@ import java.util.Map;
 import java.util.Objects;
 
 public class Logger {
-    private static Logger instance=null;
+
     private static final Map<String, List<String>> debugLog = new HashMap<>();
+    private static Logger instance=null;
 
     public static Logger gl() {
         if (instance == null)

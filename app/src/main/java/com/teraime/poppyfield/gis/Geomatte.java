@@ -60,7 +60,7 @@ public class Geomatte {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
+		Log.d("vagel", "convert for "+source.getName()+" returns "+result.toString());
 		return result.toString();
 	}
 	private static boolean isCoord(String line) {

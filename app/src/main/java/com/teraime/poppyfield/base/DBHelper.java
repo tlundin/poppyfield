@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class DBHelper {
 
@@ -19,7 +20,18 @@ public class DBHelper {
     private final Map<String,String> realToDBColumnName;
     private final Map<String,String> DBToRealColumnName;
 
+    public Map<String, String> translate(Map<String, String> rawContext) {
+        Map<String,String> ret = new HashMap();
+        for (String key:rawContext.keySet()) {
+            String dbKey = realToDBColumnName.get(key);
+            if (dbKey != null)
+                ret.put(dbKey,rawContext.get(key));
+            else
+                Logger.gl().e("Failed keymap for "+key);
 
+        }
+        return ret;
+    }
 
 
     public interface ColTranslate {
@@ -30,8 +42,8 @@ public class DBHelper {
     }
 
     public DBHelper(ArrayList<String> columnRealNames, SharedPreferences appPrefs) {
-        realToDBColumnName = new HashMap<>();
-        DBToRealColumnName = new HashMap<>();
+        realToDBColumnName = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        DBToRealColumnName = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         realToDBColumnName.put("UUID","UUID");
         realToDBColumnName.put("uid","UUID");

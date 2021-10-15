@@ -1,6 +1,5 @@
 package com.teraime.poppyfield.viewmodel;
 
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -10,17 +9,16 @@ import android.util.Log;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.sqlite.db.SimpleSQLiteQuery;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.teraime.poppyfield.base.DBHelper;
 import com.teraime.poppyfield.base.Expressor;
+import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
 import com.teraime.poppyfield.base.Variable;
-import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Configurations.GisType;
@@ -29,8 +27,10 @@ import com.teraime.poppyfield.loader.Loader;
 import com.teraime.poppyfield.room.FieldPadRepository;
 import com.teraime.poppyfield.room.VariableTable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class WorldViewModel extends AndroidViewModel {
 
@@ -48,14 +48,14 @@ public class WorldViewModel extends AndroidViewModel {
     private final Loader mLoader;
     private MenuDescriptor mMenuDescriptor;
     private boolean appEntry = true;
-    private SharedPreferences mAppPrefs;
+    private SharedPreferences mAppPrefs,globalPrefs;
     private DBHelper mDBHelper;
+    private Map<String,String> mWorkFlowContext,mSelectionBasedContext;
 
     public WorldViewModel(Application application) {
         super(application);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
-        this.app=prefs.getString("App","smabio");
-
+        globalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
+        this.app=globalPrefs.getString("App","smabio");
         mAppPrefs = application.getSharedPreferences(app, Context.MODE_PRIVATE);
         mRepository = new FieldPadRepository(application);
         mVariables = mRepository.getTimeOrderedList();
@@ -66,6 +66,8 @@ public class WorldViewModel extends AndroidViewModel {
         mLoader.load(app,this);
         mExpressor = Expressor.create(this);
         mActivity=application;
+        mWorkFlowContext = new HashMap<>();
+        mSelectionBasedContext = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     }
 
     public String getApp() { return app; }
@@ -127,18 +129,61 @@ public class WorldViewModel extends AndroidViewModel {
 
     public boolean isAppEntry() {return appEntry;}
 
-    public List<GisType> getGeoData() { return mLoader.getGeoData();}
-
-    public String latestMatch(String varName) {
-        return mRepository.latestMatch(varName);
-    }
+    public List<GisType> getAllgeoData() { return mLoader.getGeoData();}
+    public List<GisObject> getGeoDataType(String type) { return mLoader.getGeoDataType(type);}
 
     public void prepareGeoData() {
         mDBHelper = new DBHelper(mLoader.getTable().getColumnRealNames(),mAppPrefs);
         deleteAllGisObjects();
         Long t1 = System.currentTimeMillis();
-        mRepository.insertGisObjects(getGeoData(),mDBHelper.getColTranslator());
+        mRepository.insertGisObjects(getAllgeoData(),mDBHelper.getColTranslator());
         Log.d("TIME","here after "+(System.currentTimeMillis()-t1)+" ms");
+    }
+
+    public Variable getVariable(String varName) {
+        StringBuilder queryBase = mRepository.buildQueryBaseFromMap(mWorkFlowContext,mDBHelper.getColTranslator());
+        String queryString = queryBase.append("var").append("=").append(varName).toString();
+        return new Variable(mRepository.latestMatchVariable(queryString));
+    }
+
+    //A context associated with a specific workflow.
+    public void setCurrentWorkFlowContext(List<Expressor.EvalExpr> context) {
+
+        if (context != null) {
+            Map<String, String> rawContext = mExpressor.evaluate(context);
+            if (rawContext != null) {
+                mWorkFlowContext = mDBHelper.translate(rawContext);
+            }
+        }
+
+    }
+
+    //A context associated with a specific workflow.
+    public void setCurrentSelectionContext(Map<String,String> extraProps) {
+            mSelectionBasedContext = extraProps;
+    }
+    public Map<String,String> getCurrentSelectionContext() {
+        return mSelectionBasedContext;
+    }
+
+    public SharedPreferences getAppPrefs() {
+        return mAppPrefs;
+    }
+
+    public SharedPreferences getGlobalPrefs() {
+        return globalPrefs;
+    }
+
+    public void addKeyToContext(String key, String value) {
+        String dbKey = mDBHelper.getColTranslator().ToDB(key);
+        if (dbKey == null) {
+            Logger.gl().e("Key Error in AddKey for key "+key);
+            return;
+        }
+        mWorkFlowContext.put(dbKey,value);
+    }
+    public Map<String, String> getCurrentContext() {
+        return mWorkFlowContext;
     }
 }
 
