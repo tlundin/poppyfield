@@ -92,6 +92,7 @@ public class GISPage extends Page {
                             for (String k : feature.getPropertyKeys())
                                 props.put(k, feature.getProperty(k));
                             model.setCurrentSelectionContext(props);
+                            model.setCurrentWorkFlowContext(expr.preCompileExpression(obj_context));
                             model.getPageStack().changePage(gisBlock.getAttr("on_click"));
                         });
                     } catch (JSONException | IOException e) {
