@@ -1,5 +1,7 @@
 package com.teraime.poppyfield.loader;
 
+import static com.teraime.poppyfield.base.Tools.writeImageToCache;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -10,6 +12,7 @@ import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.S;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -46,9 +49,9 @@ public class WebLoader {
     }
 
 
-    public static void getImage(ImgLoaderCb imgCallback, String app, String picName) {
+    public static void getImage(ImgLoaderCb imgCallback, String app, File cacheFolder, String picName) {
         String url = S.SERVER + "/" + app + "/extras/";
-        new DownloadImageTask(imgCallback).execute(protocol+ url + picName);
+        new DownloadImageTask(imgCallback, cacheFolder, picName).execute(protocol+ url + picName);
     }
 
     public static void getMapMetaData(LoaderCb callback, String app, String picName) {
@@ -100,17 +103,26 @@ public class WebLoader {
     }
 
     private static class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
-        ImgLoaderCb cb;Bitmap mImg = null;
+        ImgLoaderCb cb;
+        File imgFolder;
+        String imgName;
 
-        public DownloadImageTask(ImgLoaderCb cb) {
+        public DownloadImageTask(ImgLoaderCb cb, File imgFolder, String imgName) {
             this.cb = cb;
+            this.imgFolder = imgFolder;
+            this.imgName = imgName;
         }
 
         protected Bitmap doInBackground(String... urls) {
             String urldisplay = urls[0];
+            Bitmap mImg = null;
             try {
                 InputStream in = new java.net.URL(urldisplay).openStream();
                 mImg = BitmapFactory.decodeStream(in);
+                if (mImg != null)
+                    writeImageToCache(imgFolder,imgName,mImg);
+                else
+                    Log.e("WEBLOADER","decode img fail for "+imgName);
             } catch (Exception e) {
                 Log.e("Error", e.getMessage());
                 e.printStackTrace();
@@ -118,6 +130,6 @@ public class WebLoader {
             return mImg;
         }
 
-        protected void onPostExecute(Bitmap result) { cb.loaded(mImg);}
+        protected void onPostExecute(Bitmap result) { cb.loaded(result);}
     }
 }

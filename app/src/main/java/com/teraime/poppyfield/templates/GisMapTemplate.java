@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +24,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.maps.android.data.geojson.GeoJsonLayer;
@@ -57,29 +60,51 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         mPage = (GISPage)model.getPageStack().getInfocusPage();
         assert v!=null;
         requestPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> { if (isGranted) { if (model.getMap()!=null) model.getMap().setMyLocationEnabled(true);}});
-
         LiveData<LatLngBounds> camBoundsL = model.getMapBoundary();
+        LiveData<String>loadL = model.getLoadState();
+        LiveData<Pair> layerL = model.getGeoJsonLD();
         Observer<? super LatLngBounds> boundsObserver = (Observer<LatLngBounds>) latLngBounds -> {
+            //getmImgOverlay
+            model.getMap().addGroundOverlay(new GroundOverlayOptions()
+            .positionFromBounds(latLngBounds)
+            .image(model.getmImgOverlay()));
+            GisMapTemplate.this.getActivity().findViewById(R.id.loadingPanel).setVisibility(View.GONE);
             model.getMap().moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 0));
-
+            model.setLoadState("DONE");
         };
+        Observer<String> loadObserver = new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                if (s.equals("LOADING"))
+                    getActivity().findViewById(R.id.loadingPanel).setVisibility(View.VISIBLE);
+                else if (s.equals("DONE"))
+                    getActivity().findViewById(R.id.loadingPanel).setVisibility(View.GONE);
+            }
+        };
+        //Pair contains - block (first) geojson (second)
+        Observer<Pair> layerObserver = json -> {
+            Block bl = (Block)json.first;
+            JSONObject jo = (JSONObject)json.second;
+            mPage.drawLayer(bl,jo);
+        };
+
         camBoundsL.observe(getViewLifecycleOwner(),boundsObserver);
 
-        mMap = v.findViewById(R.id.myMap);
-        mMap.onCreate(savedInstanceState);
-        mMap.getMapAsync(this);
-        mPage.onCreate(this);
-        mMap = v.findViewById(R.id.myMap);
-        mMap.onCreate(savedInstanceState);
-        mMap.getMapAsync(this);
-        mPage.onCreate(this);
+        loadL.observe(getViewLifecycleOwner(),loadObserver);
 
+        layerL.observe(getViewLifecycleOwner(), layerObserver);
+
+        mMap = v.findViewById(R.id.myMap);
+        mMap.onCreate(savedInstanceState);
+        mMap.getMapAsync(this);
+        mPage.onCreate(this);
         return v;
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         model.setMap(googleMap);
+        Log.d("READY","CALLING ONMAP READY");
         mPage.onMapReady();
         showUserIfAllowed(googleMap);
     }

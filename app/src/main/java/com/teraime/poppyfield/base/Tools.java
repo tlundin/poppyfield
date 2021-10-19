@@ -1,6 +1,7 @@
 package com.teraime.poppyfield.base;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import androidx.fragment.app.Fragment;
@@ -13,6 +14,7 @@ import com.teraime.poppyfield.viewmodel.WorldViewModel;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -62,6 +64,8 @@ public class Tools {
             byte[] encoded = Files.readAllBytes(Paths.get(mContext.getFilesDir().getPath(), "cache",sFileName));
             return new String(encoded, Charset.defaultCharset());
         }
+
+
     public static void writeToCache(Context mContext, String sFileName, List<String> arr){
 
         File dir = new File(mContext.getFilesDir(), "cache");
@@ -84,6 +88,29 @@ public class Tools {
         Logger.gl().d("IO","New Cache entry: "+dir+"/"+sFileName);
 
     }
+
+    public static void writeImageToCache(File cacheFolder, String picName, Bitmap bmp) {
+        File file = new File(cacheFolder, picName);
+        FileOutputStream fOut;
+        try {
+            fOut = new FileOutputStream(file);
+            bmp.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+            fOut.flush();
+            fOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static boolean imageIsCached(File cacheFolder,String picName) {
+        File file = new File(cacheFolder, picName);
+        return file.exists();
+    }
+
+
 
     public static Page createPage(WorldViewModel model, String template, Workflow wf) {
         switch (template) {

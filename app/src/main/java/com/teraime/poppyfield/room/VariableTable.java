@@ -5,6 +5,11 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+import com.teraime.poppyfield.base.ValueProps;
+
+import java.util.HashMap;
+import java.util.Map;
+
 @Entity(tableName = "variabler")
 public class VariableTable {
 
@@ -138,4 +143,11 @@ public class VariableTable {
         this.L10 = L10;
     }
 
+    public ValueProps toMap() {
+        HashMap<String, String> ret = new HashMap<String, String>();
+        ret.put("value",value);
+        ret.put("author",author);
+        ret.put("UUID",UUID);
+        return new ValueProps(ret);
+    }
 }

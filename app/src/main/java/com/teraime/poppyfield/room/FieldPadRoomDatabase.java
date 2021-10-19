@@ -29,8 +29,8 @@ public abstract class FieldPadRoomDatabase extends RoomDatabase {
             synchronized (FieldPadRoomDatabase.class) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
-                            FieldPadRoomDatabase.class, "fieldpad_database").allowMainThreadQueries()
-                            .build();
+                            FieldPadRoomDatabase.class, "fieldpad_database")
+                            .build(); //.allowMainThreadQueries()
                 }
             }
         }

@@ -24,7 +24,7 @@ public class Workflow {
             blockM.get(type).add(b);
         }
         String context = blocks.get(0).mAttrs.get("context");
-            mContext = Expressor.gl().preCompileExpression(context);
+            mContext = Expressor.preCompileExpression(context);
         if (context != null)
             Log.d("CHANGEPAGE",context+" FOR "+this.getName());
         else

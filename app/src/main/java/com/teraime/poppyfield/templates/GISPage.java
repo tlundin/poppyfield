@@ -29,14 +29,12 @@ import com.google.maps.android.ui.IconGenerator;
 import com.teraime.poppyfield.base.Block;
 import com.teraime.poppyfield.base.Expressor;
 import com.teraime.poppyfield.base.Workflow;
-import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
@@ -44,7 +42,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class GISPage extends Page {
-
 
     public GISPage(WorldViewModel model, String template, Workflow wf) {
         super(model, template, wf);
@@ -55,55 +52,42 @@ public class GISPage extends Page {
     }
 
     public void onMapReady() {
-        model.getMap().setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        model.getMap().setMapType(GoogleMap.MAP_TYPE_SATELLITE);
         reload();
-
     }
 
-    private void drawLayers(GoogleMap googleMap) {
+    private void spawnLayers() {
+        List<Block> layers = workFlow.getBlocksOfType(Block.GIS_LAYER);
+        List<Block> gisBlocks = workFlow.getBlocksOfType(Block.GIS_POINTS);
+        for (Block gisBlock : gisBlocks) {
+            model.generateLayer(gisBlock);
+        }
+    }
+
+    public void drawLayer(Block gisBlock, JSONObject geoJsonData) {
         List<Block> layers = workFlow.getBlocksOfType(Block.GIS_LAYER);
         List<Block> gisBlocks = workFlow.getBlocksOfType(Block.GIS_POINTS);
         Log.d("v", "GETBLOCKSOFTYPE " + workFlow.getBlocksOfType(Block.GIS_LAYER));
-        Expressor expr = Expressor.gl();
+        GoogleMap googleMap = model.getMap();
+        GeoJsonLayer gl = new GeoJsonLayer(googleMap, geoJsonData);
+        fillPolygons(gl,gisBlock);
+        gl.addLayerToMap();
+        gl.setOnFeatureClickListener((GeoJsonLayer.GeoJsonOnFeatureClickListener) feature -> {
+            //feature contains all keys under properties.
+            //required for lookup.
+            Map<String, String> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            for (String k : feature.getPropertyKeys())
+                props.put(k, feature.getProperty(k));
+            model.setSingleObjectContent(props);
+            Log.d("vagel", feature.getProperties().toString());
 
-        for (Block l : layers) {
-            Log.d("v", "Layer" + l.getAttrs().toString());
-        }
-        for (Block gisBlock : gisBlocks) {
-            Log.d("vagel", gisBlock.getBlockType());
-            Log.d("vagel", gisBlock.getAttrs().toString());
-            boolean createAllowed = gisBlock.getAttr("create_allowed").equals("true");
-            if (!createAllowed) {
-                Log.d("vagel","Create not allowed");
-                String obj_context = gisBlock.getAttr("obj_context");
-                Map<String, String> context = expr.evaluate(expr.preCompileExpression(obj_context));
-                String gisType = context.get("gistyp");
-                if (gisType != null) {
-                    try {
-                        Log.d("vagel","Gis not null "+gisType);
-                        File source = Paths.get(model.getCacheFolder(), "cache", gisType).toFile();
-                        JSONObject geoJsonData = new JSONObject(convert(source));
-                        GeoJsonLayer gl = new GeoJsonLayer(googleMap, geoJsonData);
-                        fillPolygons(gl,gisBlock,gisType);
-                        gl.addLayerToMap();
-                        gl.setOnFeatureClickListener((GeoJsonLayer.GeoJsonOnFeatureClickListener) feature -> {
-                            Log.d("vagel", feature.getProperties().toString());
-                            Map<String, String> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-                            for (String k : feature.getPropertyKeys())
-                                props.put(k, feature.getProperty(k));
-                            model.setCurrentSelectionContext(props);
-                            model.setCurrentWorkFlowContext(expr.preCompileExpression(obj_context));
-                            model.getPageStack().changePage(gisBlock.getAttr("on_click"));
-                        });
-                    } catch (JSONException | IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
+            model.getPageStack().changePage(gisBlock.getAttr("on_click"));
+        });
+
     }
 
-    private void fillPolygons(GeoJsonLayer layer, Block gisblock, String gisType) {
+
+    private void fillPolygons(GeoJsonLayer layer, Block gisblock) {
         Map<String, String> gisBlockAttrs = gisblock.getAttrs();
         Map<String, String> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         int color = Color.parseColor(gisBlockAttrs.get("color"));
@@ -112,16 +96,14 @@ public class GISPage extends Page {
             props.clear();
             for (String k : feature.getPropertyKeys())
                 props.put(k, feature.getProperty(k));
-            model.setCurrentSelectionContext(props);
+            model.setSingleObjectContent(props);
             // Check if the magnitude property exists
             if (feature.getGeometry() instanceof GeoJsonPolygon) {
-                        GeoJsonPolygonStyle ps = new GeoJsonPolygonStyle();
-                        ps.setFillColor(color);
-                        LatLng x = ((GeoJsonPolygon) feature.getGeometry()).getCoordinates().get(0).get(0);
-                        addText(x, feature.getProperty("Shape_Area"), 1, 12);
-                        feature.setPolygonStyle(ps);
-
-
+                GeoJsonPolygonStyle ps = new GeoJsonPolygonStyle();
+                ps.setFillColor(color);
+                LatLng x = ((GeoJsonPolygon) feature.getGeometry()).getCoordinates().get(0).get(0);
+                addText(x, feature.getProperty("Shape_Area"), 1, 12);
+                feature.setPolygonStyle(ps);
             } else if (feature.getGeometry() instanceof GeoJsonPoint) {
 
                 String label = gisblock.getLabel();
@@ -186,12 +168,13 @@ public class GISPage extends Page {
 
     @Override
     public void reload() {
+        model.setLoadState("LOADING");
         Block gis = workFlow.getBlock(Block.GIS);
         String source = gis.getAttr("source");
         source = source.split(",")[0];
-        source = Expressor.gl().analyze(Expressor.gl().preCompileExpression(source));
+        source = Expressor.analyze(Expressor.preCompileExpression(source,null),gis.getAttrs());
         Log.d("v3","In reload - source: "+source);
         model.updateBoundary(source);
-        drawLayers(model.getMap());
+        spawnLayers();
     };
 }

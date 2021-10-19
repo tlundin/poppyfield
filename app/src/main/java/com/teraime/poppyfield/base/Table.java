@@ -89,6 +89,27 @@ public class Table {
         return keyParts;
     }
 
+    public List<String> getRowFromKey(String key) {
+        if (key == null) {
+            Log.e("nils","key was null in getRowFromKey (Table.java)");
+            return null;
+        }
+        return nameToRowMap.get(key.trim());
+    }
+
+    public Map<String, String> getVariableDef(String key) {
+        List<String> row = getRowFromKey(key);
+        if (row !=null) {
+            Map<String, String> ret = new HashMap<String, String>();
+            for(int i=0;i<row.size();i++) {
+                ret.put(myColumns.get(i),row.get(i));
+            }
+            return ret;
+        }
+        return null;
+    }
+
+
     public void printTable() {
         Log.d("vortex",myColumns.toString());
         for (Integer key:rowTable.keySet()) {

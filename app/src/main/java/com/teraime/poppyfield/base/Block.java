@@ -21,7 +21,7 @@ public class Block {
         this.id=id;
         this.mAttrs=attrs;
         this.blockType=name;
-        eLabel = Expressor.gl().preCompileExpression(attrs.get("label"));
+        eLabel = Expressor.preCompileExpression(attrs.get("label"));
     }
 
     public Map<String, String> getAttrs() {
@@ -43,7 +43,9 @@ public class Block {
             Log.e("vagel", "elabel is null");
             return null;
         }
-        label = Expressor.gl().analyze(eLabel);
+        label = Expressor.analyze(eLabel,null);
         return label;
     }
+    
+
 }

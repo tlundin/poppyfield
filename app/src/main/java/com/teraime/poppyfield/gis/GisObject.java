@@ -15,7 +15,7 @@ public class GisObject {
         this.keyChain = keyChain;
         this.myCoordinates = myCoordinates;
         this.attributes = attributes;
-        eLabel = Expressor.gl().preCompileExpression(attributes.get("label"));
+        eLabel = Expressor.preCompileExpression(attributes.get("label"));
 
     }
 
@@ -30,8 +30,9 @@ public class GisObject {
             return label;
         if (eLabel==null)
             return null;
-        label = Expressor.gl().analyze(eLabel);
+        label = Expressor.analyze(eLabel,keyChain);
         //@notation for id
+        //TODO - move to expressor
         if (label!=null && label.startsWith("@")) {
             String key = label.substring(1, label.length());
             if (key.length()>0)
