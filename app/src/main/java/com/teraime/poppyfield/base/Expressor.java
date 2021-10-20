@@ -1202,6 +1202,7 @@ public class Expressor {
                     return Clock.getSweDate();
                 case getColumnValue:
                     if (checkPreconditions(evalArgs,1,No_Null_Literal)) {
+                        Log.d("EXPR","eval args in getcol"+(evalArgs==null?"null":evalArgs.toString()));
                             return myAttrs.get((String) evalArgs.get(0));
 
                     }
@@ -1465,7 +1466,7 @@ public class Expressor {
             return null;
         }
         //evaluate in default context.
-        //Log.d("franco","Analyzing "+expressions.toString());
+        Log.d("franco","Analyzing "+expressions.toString()+"with context "+(myAttrs==null?"null":myAttrs.toString()));
         StringBuilder endResult = new StringBuilder();
         for (EvalExpr expr:expressions) {
             //tret=null;
@@ -1550,6 +1551,7 @@ public class Expressor {
     public static Map<String,String> evaluate(List<Expressor.EvalExpr> eContext,Map<String,String> evalContext) {
         if(eContext == null)
             return null;
+        Log.d("EXPR", "in evaluate with context "+(evalContext==null?"null":evalContext.toString()));
         String err = null;
         Map<String, String> keyHash = null;
         boolean  hasWildCard = false;

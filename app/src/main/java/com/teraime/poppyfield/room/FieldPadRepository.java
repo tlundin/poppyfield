@@ -252,7 +252,7 @@ public class FieldPadRepository {
         }
     }
 
-    public void generateLayer(Block gisBlock, String cacheFolder, Map<String,String> wfContext) {
+    public void generateLayer(Block gisBlock, String cacheFolder, Map<String,String> context) {
 
         executorService.execute(new Runnable() {
             @Override
@@ -262,7 +262,7 @@ public class FieldPadRepository {
                 if (!createAllowed) {
                     String object_context = gisBlock.getAttr("obj_context");
                     //Trakt + gistyp
-                    Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),wfContext);
+                    Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),context);
                     String gisType = gisLayerContext.get("gistyp");
                     Log.d("GIPS","context "+gisLayerContext);
                     if (gisType != null) {

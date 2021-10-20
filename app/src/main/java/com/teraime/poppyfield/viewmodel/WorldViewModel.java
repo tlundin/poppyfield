@@ -160,8 +160,8 @@ public class WorldViewModel extends AndroidViewModel {
 
     //A context associated with a specific workflow.
     public void setCurrentWorkFlowContext(List<Expressor.EvalExpr> context) {
-        mWorkFlowContext = Expressor.evaluate(context,null);
-        Log.d("vagel","WFClontext DB "+mWorkFlowContext);
+        mWorkFlowContext = Expressor.evaluate(context,getSingleObjectContext());
+        Log.d("vagel","WF context set to "+mWorkFlowContext);
     }
     //A context associated with a gislayer.
     public Map<String, String> setCurrentGisLayerContext(List<Expressor.EvalExpr> context) {
@@ -184,6 +184,10 @@ public class WorldViewModel extends AndroidViewModel {
     public void setSingleObjectContent(Map<String, String> properties) {
 
         mEvalProps = properties;
+        if (mEvalProps !=null)
+        Log.d("vagel","single obj props now "+mEvalProps.toString());
+        else
+            Log.d("vagel","sing obj props null");
     }
 
 
@@ -209,8 +213,8 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
 
-    public String getSingleObjectContext(String varName) {
-        return mEvalProps.get(varName);
+    public Map<String, String> getSingleObjectContext() {
+        return mEvalProps;
     }
 
     public void setLoadState(String state) {
@@ -218,7 +222,7 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
     public void generateLayer(Block gisBlock) {
-        mRepository.generateLayer(gisBlock,getCacheFolder(),getWorkflowContext());
+        mRepository.generateLayer(gisBlock,getCacheFolder(),getSingleObjectContext());
     }
 }
 

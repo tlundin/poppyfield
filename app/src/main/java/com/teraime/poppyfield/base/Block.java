@@ -14,7 +14,7 @@ public class Block {
     String id;
     Map<String,String> mAttrs;
     String blockType;
-    String label;
+
 
 
     public Block(String name, String id, Map<String, String> attrs) {
@@ -27,6 +27,7 @@ public class Block {
     public Map<String, String> getAttrs() {
         return mAttrs;
     }
+
     public String getAttr(String attributeName) {
         return mAttrs.get(attributeName);
     }
@@ -36,16 +37,19 @@ public class Block {
     public String getBlockId() {
         return id;
     }
-    public String getLabel() {
-        if (label != null)
-            return label;
+    public String getLabel(Map <String,String> props) {
         if (eLabel == null) {
             Log.e("vagel", "elabel is null");
             return null;
         }
-        label = Expressor.analyze(eLabel,null);
+        String label = Expressor.analyze(eLabel,props);
+        if (label!=null && label.startsWith("@")) {
+            String key = label.substring(1, label.length());
+            if (key.length()>0)
+                label = props.get(key);
+        }
         return label;
     }
-    
+
 
 }

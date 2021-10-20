@@ -78,9 +78,8 @@ public class GISPage extends Page {
             Map<String, String> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             for (String k : feature.getPropertyKeys())
                 props.put(k, feature.getProperty(k));
-            model.setSingleObjectContent(props);
+            model.setSingleObjectContent(props); //this needs to be known by changepage.
             Log.d("vagel", feature.getProperties().toString());
-
             model.getPageStack().changePage(gisBlock.getAttr("on_click"));
         });
 
@@ -96,7 +95,6 @@ public class GISPage extends Page {
             props.clear();
             for (String k : feature.getPropertyKeys())
                 props.put(k, feature.getProperty(k));
-            model.setSingleObjectContent(props);
             // Check if the magnitude property exists
             if (feature.getGeometry() instanceof GeoJsonPolygon) {
                 GeoJsonPolygonStyle ps = new GeoJsonPolygonStyle();
@@ -105,13 +103,8 @@ public class GISPage extends Page {
                 addText(x, feature.getProperty("Shape_Area"), 1, 12);
                 feature.setPolygonStyle(ps);
             } else if (feature.getGeometry() instanceof GeoJsonPoint) {
-
-                String label = gisblock.getLabel();
-                if (label!=null && label.startsWith("@")) {
-                    String key = label.substring(1, label.length());
-                    if (key.length()>0)
-                        label = props.get(key);
-                }
+                Log.d("vagel","PROPS: "+props.toString());
+                String label = gisblock.getLabel(props);
                 IconGenerator icg = new IconGenerator(model.getActivity());
                 icg.setStyle(IconGenerator.STYLE_WHITE);
                 Bitmap bmp = icg.makeIcon(label);
@@ -172,7 +165,7 @@ public class GISPage extends Page {
         Block gis = workFlow.getBlock(Block.GIS);
         String source = gis.getAttr("source");
         source = source.split(",")[0];
-        source = Expressor.analyze(Expressor.preCompileExpression(source,null),gis.getAttrs());
+        source = Expressor.analyze(Expressor.preCompileExpression(source,null),model.getSingleObjectContext());
         Log.d("v3","In reload - source: "+source);
         model.updateBoundary(source);
         spawnLayers();
