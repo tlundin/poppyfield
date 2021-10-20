@@ -34,7 +34,6 @@ public class Table {
     }
 
 
-
     public ErrCode addRow(List<String> rowEntries) {
         int index=0;
         if (rowEntries == null||rowEntries.size()==0)
@@ -97,7 +96,7 @@ public class Table {
         return nameToRowMap.get(key.trim());
     }
 
-    public Map<String, String> getVariableDef(String key) {
+    public Map<String, String> getVariableExtraFields(String key) {
         List<String> row = getRowFromKey(key);
         if (row !=null) {
             Map<String, String> ret = new HashMap<String, String>();

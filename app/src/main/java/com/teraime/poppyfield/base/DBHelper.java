@@ -1,6 +1,7 @@
 package com.teraime.poppyfield.base;
 
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.util.Log;
 
 import com.teraime.poppyfield.gis.GisObject;
@@ -35,9 +36,7 @@ public class DBHelper {
 
 
     public interface ColTranslate {
-
         String ToDB(String inAppColName);
-
         String ToReal(String DBColName);
     }
 
@@ -106,6 +105,71 @@ public class DBHelper {
                 return DBToRealColumnName.get(DBColName);
             }
         };
+    }
+
+    public class DBColumnPicker {
+        final Cursor c;
+        private static final String NAME = "var", VALUE = "value", TIMESTAMP = "timestamp", LAG = "lag", CREATOR = "author";
+
+        DBColumnPicker(Cursor c) {
+            this.c = c;
+        }
+
+        public StoredVariableData getVariable() {
+            return new StoredVariableData(pick(NAME), pick(VALUE), pick(TIMESTAMP), pick(LAG), pick(CREATOR));
+        }
+
+        public Map<String, String> getKeyColumnValues() {
+            Map<String, String> ret = new HashMap<String, String>();
+            Set<String> keys = realToDBColumnName.keySet();
+            String col = null;
+            for (String key : keys) {
+                col = realToDBColumnName.get(key);
+                if (col == null)
+                    col = key;
+                if (pick(col)!= null)
+                    ret.put(key, pick(col));
+            }
+            //Log.d("nils","getKeyColumnValues returns "+ret.toString());
+            return ret;
+        }
+
+        private String pick(String key) {
+            return c.getString(c.getColumnIndex(key));
+        }
+
+        public boolean moveToFirst() {
+            return c != null && c.moveToFirst();
+        }
+
+        public boolean next() {
+            boolean b = c.moveToNext();
+            if (!b)
+                c.close();
+            return b;
+        }
+
+        public void close() {
+            c.close();
+        }
+
+    }
+
+    public class StoredVariableData {
+        StoredVariableData(String name, String value, String timestamp,
+                           String lag, String author) {
+            this.timeStamp = timestamp;
+            this.value = value;
+            this.lagId = lag;
+            this.creator = author;
+            this.name = name;
+        }
+
+        public final String name;
+        public final String timeStamp;
+        public final String value;
+        public final String lagId;
+        public final String creator;
     }
 
 

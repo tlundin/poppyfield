@@ -147,15 +147,19 @@ public class WorldViewModel extends AndroidViewModel {
         mRepository.insertGisObjects(getAllgeoData(),mDBHelper.getColTranslator());
     }
 
+    public Map<String,String> getVariableExtraFields(String key) {
+        return mLoader.getTable().getVariableExtraFields(key);
+    }
+
     public Variable getVariable(String varName) {
         if (mEvalProps.containsKey(varName)) {
             Log.d("vagel","Found "+varName+" in evalProps!");
-            return new Variable(mLoader.getTable().getVariableDef(varName), new ValueProps().setValue(mEvalProps.get(varName)));
+            return new Variable(mLoader.getTable().getVariableExtraFields(varName), new ValueProps().setValue(mEvalProps.get(varName)));
         }
         return null;
         //StringBuilder queryBase = mRepository.buildQueryBaseFromMap(mWorkFlowContext,mDBHelper.getColTranslator());
         //String queryString = queryBase.append("var").append("=").append(varName).toString();
-        //return new Variable(mLoader.getTable().getVariableDef(varName),mRepository.latestMatchVariable(queryString).toMap());
+        //return new Variable(mLoader.getTable().getVariableExtraFields(varName),mRepository.latestMatchVariable(queryString).toMap());
     }
 
     //A context associated with a specific workflow.
@@ -224,5 +228,7 @@ public class WorldViewModel extends AndroidViewModel {
     public void generateLayer(Block gisBlock) {
         mRepository.generateLayer(gisBlock,getCacheFolder(),getSingleObjectContext());
     }
+
+
 }
 
