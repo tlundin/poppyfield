@@ -25,8 +25,8 @@ public class PageStack {
         model =world;
         mPageLiveD = new MutableLiveData<>(mStack);
         Log.d("v","Bootpage added");
-        mStack.add(Tools.createPage(model,"LogScreen",null));
-        mEvent = EventTypes.NEW_PAGE;
+        //mStack.add(Tools.createPage(model,"LogScreen",null));
+        mEvent = EventTypes.NONE;
     }
 
     public void changePage(String target) {
@@ -51,7 +51,7 @@ public class PageStack {
         Page newP = Tools.createPage(model,template,wf);
         Page oldP = getInfocusPage();
         mStack.add(newP);
-        if (!template.equals(oldP.getTemplateType())) {
+        if (oldP == null || !template.equals(oldP.getTemplateType())) {
             Log.d("Frags-new",mStack.toString());
             mEvent = EventTypes.NEW_PAGE;
             mPageLiveD.setValue(mStack);

@@ -28,5 +28,5 @@ public interface VariableDAO {
     void deleteAllHistorical();
 
     @RawQuery
-    VariableTable latestMatch(SimpleSQLiteQuery query);
+    List<VariableTable> latestMatch(SimpleSQLiteQuery query);
 }

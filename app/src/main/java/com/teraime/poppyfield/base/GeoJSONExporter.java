@@ -5,6 +5,7 @@ import android.content.Context;
 import android.util.JsonWriter;
 import android.util.Log;
 
+import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.loader.Configurations.VariablesConfiguration;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 import org.json.JSONObject;
@@ -14,8 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ExecutorService;
+
 
 public class GeoJSONExporter  {
 
@@ -267,28 +267,18 @@ public class GeoJSONExporter  {
 				} else {
 					
 					o.e("GisObjects was null!");
-					return new Report(ExportReport.NO_DATA);
+					return null;
 				}
 				//End of array.
 				writer.endArray();
 				//End of all.
 				writer.endObject();
-
-				Log.d("nils","finished writing JSON");
-				//Log.d("nils", sw.toString());
-				if (!coordLess.isEmpty()&&globalPh.getB(PersistenceHelper.DEVELOPER_SWITCH)) {
-					
-					o.e("No coordinates found for these objects:");
-					for (String keyUID:coordLess) {
-						o.addCriticalText(keyUID);
-					}
-				}
-				return new Report(sw.toString(),varC);
+				return new JSONObject(sw.toString());
 			}else
 				Log.e("vortex","EMPTY!!!");
 		} catch (Exception e) {
 
-			Tools.printErrorToLog(GlobalState.getInstance().getLogger(), e, null);
+			e.printStackTrace();
 
 			cp.close();
 		} finally {
@@ -310,7 +300,7 @@ public class GeoJSONExporter  {
 			return thisYear;
 		//otherwise, search historical for uid.
 		return
-				GlobalState.getInstance().getDb().findVarFromUID(uid,GisConstants.GPS_Coord_Var_Name);
+				null;//GlobalState.getInstance().getDb().findVarFromUID(uid,GisConstants.GPS_Coord_Var_Name);
 	}
 
 	private void printCoord(JsonWriter writer, String coord) {
@@ -333,7 +323,6 @@ public class GeoJSONExporter  {
 		}
 	}
 
-	@Override
 	public String getType() {
 		return "json";
 	}

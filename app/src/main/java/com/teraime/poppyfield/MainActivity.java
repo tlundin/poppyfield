@@ -21,9 +21,11 @@ import com.teraime.poppyfield.base.PageStack;
 import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.loader.Configurations.Config;
+import com.teraime.poppyfield.templates.LoadFragment;
 import com.teraime.poppyfield.templates.Page;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,8 +42,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout);
         model = new ViewModelProvider(this).get(WorldViewModel.class);
-
-
         final NavigationView navi = findViewById(R.id.nav);
         navi.setItemIconTintList(null);
         topAppBar = this.findViewById(R.id.topAppBar);
@@ -51,19 +51,17 @@ public class MainActivity extends AppCompatActivity {
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         PageStack stack = model.getPageStack();
 
-        //getSupportFragmentManager().beginTransaction()
-        //        .replace(R.id.content_frame,
-        //                Tools.createFragment(stack.getInfocusPage().getTemplateType()),
-        //                stack.getInfocusPage().getName()).commit();
-        //Log.d("Frags-oc",getSupportFragmentManager().getFragments().toString());
-        //Log.d("Frags","Created fragment "+stack.getInfocusPage().getName());
         final Observer<List<Config<?>>> loadObserver = configs -> {
             if (configs.size() == 4 ) {
                 populateMenu(navi.getMenu(), model.getMenuDescriptor());
                 Logger.gl().d("MORTIS", "DONE");
-                if (model.isAppEntry())
-                    drawerLayout.openDrawer(GravityCompat.START);
+                //if (model.isAppEntry())
+                //    drawerLayout.openDrawer(GravityCompat.START);
                 model.prepareGeoData();
+                Map<String, String> test = new HashMap<>();
+                test.put("trakt","180");
+
+                model.queryGisObjects(test);
             }
         };
 
@@ -89,6 +87,13 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("Frags","EventType: "+event.name());
             }
         };
+
+        //Present load screen
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.content_frame,
+                        new LoadFragment())
+                .commit();
+
         stack.getPageLive().observe(this,pageObserver);
         model.getMyConf().observe(this, loadObserver);
     }

@@ -1496,7 +1496,7 @@ public class Expressor {
     //Context
     public static List<EvalExpr> preCompileExpression(String expression,Map <String,String> myAttrs) {
         if (expression==null) {
-            Log.e("vortex","Precompile expression returns immediately on null string input");
+            //Log.e("vortex","Precompile expression returns immediately on null string input");
             return null;
         }
         o = Logger.gl();

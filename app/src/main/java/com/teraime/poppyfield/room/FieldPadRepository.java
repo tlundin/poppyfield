@@ -40,6 +40,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +52,7 @@ import java.util.concurrent.Executors;
 
 public class FieldPadRepository {
 
-    private static final int DEFAULT_THREAD_POOL_SIZE = 4;
+
     private final VariableDAO mVDao;
     private final LiveData<List<VariableTable>> allVars;
     private final MutableLiveData<LatLngBounds> mBoundaries;
@@ -64,14 +66,14 @@ public class FieldPadRepository {
     // dependency. This adds complexity and much more code, and this sample is not about testing.
     // See the BasicSample in the android-architecture-components repository at
     // https://github.com/googlesamples
-    public FieldPadRepository(Application application) {
+    public FieldPadRepository(Application application, ExecutorService executorService) {
         FieldPadRoomDatabase db = FieldPadRoomDatabase.getDatabase(application);
         mVDao = db.variableDao();
         allVars = mVDao.getTimeOrderedList();
         mBoundaries = new MutableLiveData<>();
         boundaryMap = new HashMap<>();
         cacheFolder = new File(application.getFilesDir(), "cache");
-        executorService = Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
+        this.executorService = executorService;
         jsonObjLD   = new MutableLiveData<>();
     }
 
@@ -173,19 +175,39 @@ public class FieldPadRepository {
 
     }
 
+    public void queryGisObjects(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate) {
+        final List<String> gisVars = new ArrayList<String>(Arrays.asList("'geotype'","'gistyp'","'objektid'","'subgistyp'","'gpscoord'"));
+        for (String var:gisVars) {
+            executorService.execute(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            StringBuilder sb = buildQueryBaseFromMap(wfKeyMap, colTranslate);
+                            sb.append("var = ");
+                            sb.append(var);
+                            Log.d("SQL", "Query: " + sb.toString());
+                            SimpleSQLiteQuery query = new SimpleSQLiteQuery(sb.toString());
+                            List<VariableTable> result = mVDao.latestMatch(query);
+                            Log.d("SQL", result.toString());
 
+                        }
+                    }
+            );
+        }
+    }
 
 
 
     public StringBuilder buildQueryBaseFromMap(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate) {
         StringBuilder queryBase = new StringBuilder();
-        queryBase.append("SELECT value FROM variabler WHERE ");
+        queryBase.append("SELECT * FROM variabler WHERE ");
         if (wfKeyMap != null) {
             for (String k : wfKeyMap.keySet()) {
                 String v = wfKeyMap.get(k);
                 queryBase.append(colTranslate.ToDB(k));
-                queryBase.append(" = ");
+                queryBase.append(" = '");
                 queryBase.append(v);
+                queryBase.append("'");
                 queryBase.append(" AND ");
             }
         }
@@ -193,17 +215,7 @@ public class FieldPadRepository {
         return queryBase;
     }
 
-    public String latestMatchValue(String queryString) {
-        SimpleSQLiteQuery query = new SimpleSQLiteQuery(queryString);
-        return mVDao.latestMatch(query).getValue();
-    }
-
-    public VariableTable latestMatchVariable(String queryString) {
-        SimpleSQLiteQuery query = new SimpleSQLiteQuery(queryString);
-        return mVDao.latestMatch(query);
-    }
-
-    public void insertGisObjects(List<GisType> geoData, DBHelper.ColTranslate colTranslator) {
+    public void insertGisObjects(List<GisType> geoData, DBHelper.ColTranslate colTranslator, MutableLiveData<String> logPing) {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
@@ -215,6 +227,8 @@ public class FieldPadRepository {
                             insertGisObject(g, colTranslator);
                         long diff = (System.currentTimeMillis() - t1);
                         Logger.gl().d("TIME", "Inserted " + geo.size() + " " + gisType.getType() + " in " + diff + " millsec");
+                        logPing.postValue(gisType.getType());
+
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

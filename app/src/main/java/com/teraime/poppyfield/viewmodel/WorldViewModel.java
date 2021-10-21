@@ -34,6 +34,8 @@ import com.teraime.poppyfield.room.VariableTable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WorldViewModel extends AndroidViewModel {
 
@@ -42,6 +44,7 @@ public class WorldViewModel extends AndroidViewModel {
     private final LiveData<List<Config<?>>> myConf;
     private final MutableLiveData<String> loadState;
     private final String cachePath;
+    private final ExecutorService mExecutorService;
     private List<String> mManifest;
     private final LiveData<List<VariableTable>> mVariables;
     private final String app;
@@ -56,14 +59,15 @@ public class WorldViewModel extends AndroidViewModel {
     private DBHelper mDBHelper;
     private Map<String,String> mWorkFlowContext,mCurrentGisLayerContext;
     private Map<String, String> mEvalProps;
-
+    private static final int DEFAULT_THREAD_POOL_SIZE = 10;
 
     public WorldViewModel(Application application) {
         super(application);
         globalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
-        this.app=globalPrefs.getString("App","smabio");
+        this.app=globalPrefs.getString("App","poppyfield");
         mAppPrefs = application.getSharedPreferences(app, Context.MODE_PRIVATE);
-        mRepository = new FieldPadRepository(application);
+        mExecutorService = Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
+        mRepository = new FieldPadRepository(application,mExecutorService);
         mVariables = mRepository.getTimeOrderedList();
         mLoader = new Loader();
         mPageStack = new PageStack(this);
@@ -78,6 +82,7 @@ public class WorldViewModel extends AndroidViewModel {
 
     public String getApp() { return app; }
     public List<String> getManifest(){ return mManifest; }
+    public ExecutorService getExecutor() { return mExecutorService; }
 
     //Livedata
     public LiveData<List<VariableTable>> getAllVariables() { return mVariables; }
@@ -142,10 +147,15 @@ public class WorldViewModel extends AndroidViewModel {
     public List<GisObject> getGeoDataType(String type) { return mLoader.getGeoDataType(type);}
 
     public void prepareGeoData() {
+        MutableLiveData<String> logPing = getLogObservable();
         mDBHelper = new DBHelper(mLoader.getTable().getColumnRealNames(),mAppPrefs);
         deleteAllGisObjects();
-        mRepository.insertGisObjects(getAllgeoData(),mDBHelper.getColTranslator());
+        mRepository.insertGisObjects(getAllgeoData(),mDBHelper.getColTranslator(),logPing);
     }
+
+    public void queryGisObjects(Map<String, String> keyMap) {
+        mRepository.queryGisObjects(keyMap,mDBHelper.getColTranslator());
+    };
 
     public Map<String,String> getVariableExtraFields(String key) {
         return mLoader.getTable().getVariableExtraFields(key);

@@ -1,5 +1,6 @@
 package com.teraime.poppyfield.loader;
 
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
@@ -47,13 +48,12 @@ public class Loader {
     public void load(String app, WorldViewModel v) {
         mWorld = v;mApp = app;
 
-        ////////////////
-        loadGisObjects();
-        loadWorkFlows();
-        loadSpinners();
-        loadTableData();
-        ////////////////
-
+                ////////////////
+                loadGisObjects();
+                loadWorkFlows();
+                loadSpinners();
+                loadTableData();
+                ////////////////
 
     }
 
@@ -73,6 +73,7 @@ public class Loader {
                         geoDataConfigs.add(gf.strip(geoJ).stringify().parse(type));
                         Tools.writeToCache(mWorld.getApplication(), gf.getType(), gf.getRawData());
                         geoConfigMap.put(type,gf.getGeoObjects());
+                        logPing.postValue(type);
                         Log.d("WROOM", gf.getRawData().toString());
                         long diff = (System.currentTimeMillis() - t1);
                         Logger.gl().d("PARSE", "Parsed " + type + "(" + gf.getVersion() + ") in " + diff + " millsec");
@@ -82,7 +83,7 @@ public class Loader {
                 }
 
                 Logger.gl().d("INSERT", "DELETE ALL CALLED");
-                logPing.setValue("GisObjects");
+                logPing.postValue("GisObjects");
             }, fileList, mApp, geoJsonFiles);
         }, mApp);
 
@@ -98,7 +99,7 @@ public class Loader {
                     Log.d("WORK", moduleFile.toString());
                     wf = new WorkflowBundle().stringify(moduleFile).parse();
                     mConfigs.add(wf);
-                    logPing.setValue("Workflows");
+                    logPing.postValue("Workflows");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -113,7 +114,7 @@ public class Loader {
                 try {
                     spinners = new Spinners().strip(moduleFile).parse();
                     mConfigs.add(spinners);
-                    logPing.setValue("Spinners");
+                    logPing.postValue("Spinners");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -128,23 +129,30 @@ public class Loader {
 
                 try {
                     WebLoader.getModule(variableF -> {
-                        if (variableF != null) {
-                            Logger.gl().d("LOAD", "[Variables loaded.]");
+                        mWorld.getExecutor().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (variableF != null) {
+                                    Logger.gl().d("LOAD", "[Variables loaded.]");
 
-                            try {
-                                GroupsConfiguration gc = new GroupsConfiguration().strip(configF).parse();
-                                VariablesConfiguration vc = new VariablesConfiguration().strip(variableF).parse(gc);
-                                mConfigs.add(gc);
-                                mConfigs.add(vc);
-                                t = vc.getTable();
-                                t.printTable();
-                                ((MutableLiveData)mWorld.getMyConf()).setValue(mConfigs);
-                                logPing.setValue("Table");
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                                    try {
+
+                                        GroupsConfiguration gc = new GroupsConfiguration().strip(configF).parse();
+                                        VariablesConfiguration vc = new VariablesConfiguration().strip(variableF).parse(gc);
+                                        mConfigs.add(gc);
+                                        mConfigs.add(vc);
+                                        t = vc.getTable();
+                                        //t.printTable();
+                                        ((MutableLiveData)mWorld.getMyConf()).postValue(mConfigs);
+                                        logPing.postValue("Table");
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                } else
+                                    Logger.gl().e("GroupsConfiguration missing");
+
                             }
-                        } else
-                            Logger.gl().e("GroupsConfiguration missing");
+                        });
                     }, mApp,"Variables.csv");
 
                 } catch (Exception e) {
