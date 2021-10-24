@@ -1,5 +1,7 @@
 package com.teraime.poppyfield.room;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
@@ -7,7 +9,10 @@ import androidx.room.PrimaryKey;
 
 import com.teraime.poppyfield.base.ValueProps;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Entity(tableName = "variabler")
@@ -143,11 +148,33 @@ public class VariableTable {
         this.L10 = L10;
     }
 
-    public ValueProps toMap() {
+    public Map<String,String> toMap() {
         HashMap<String, String> ret = new HashMap<String, String>();
-        ret.put("value",value);
-        ret.put("author",author);
+        ret.put("id",Integer.toString(id));
         ret.put("UUID",UUID);
-        return new ValueProps(ret);
+        ret.put("year",year);
+        ret.put("var",var);
+        ret.put("value",value);
+        ret.put("lag",lag);
+        ret.put("author",author);
+        ret.put("timestamp",Long.toString(timestamp));
+        ret.put("L1",L1);
+        ret.put("L2",L2);
+        ret.put("L3",L3);
+        ret.put("L4",L4);
+        ret.put("L5",L5);
+        ret.put("L6",L6);
+        ret.put("L7",L7);
+        ret.put("L8",L8);
+        ret.put("L9",L9);
+        ret.put("L10",L10);
+        return ret;
+    }
+
+
+    public String getCol(String colName) {
+        List<String> vals = new ArrayList<String>(Arrays.asList(L1,L2,L3,L4,L5,L6,L7,L8,L9,L10));
+        int colIndex = Integer.parseInt(colName.replace("L",""));
+        return vals.get(colIndex-1);
     }
 }

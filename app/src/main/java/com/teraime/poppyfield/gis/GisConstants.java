@@ -2,6 +2,12 @@ package com.teraime.poppyfield.gis;
 
 import com.google.android.gms.maps.GoogleMap;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class GisConstants {
 	public final static String POINT = "Point";
 	public static final String MULTI_POINT = "MultiPoint";
@@ -20,7 +26,7 @@ public class GisConstants {
 	public static final String GPS_Coord_Var_Name = "gpscoord";
 	public static final String MULTI_POLYGON = "Multipolygon";
 	public static final String ObjectID ="OBJECTID";
-
+	public static final Set<String> gisVars = new HashSet<String>(Arrays.asList("geotype","gistyp","objektid","subgistyp","gpscoord"));
 	public static int getGoogleMapType(String mapType) {
 		switch (mapType) {
 			case "normal":

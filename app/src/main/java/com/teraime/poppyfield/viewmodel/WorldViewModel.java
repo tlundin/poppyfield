@@ -7,9 +7,11 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.core.view.GravityCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptor;
@@ -18,11 +20,13 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.teraime.poppyfield.base.Block;
 import com.teraime.poppyfield.base.DBHelper;
 import com.teraime.poppyfield.base.Expressor;
+import com.teraime.poppyfield.base.GeoJsonGenerator;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
 import com.teraime.poppyfield.base.ValueProps;
 import com.teraime.poppyfield.base.Variable;
+import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Configurations.GisType;
@@ -30,10 +34,18 @@ import com.teraime.poppyfield.loader.Configurations.WorkflowBundle;
 import com.teraime.poppyfield.loader.Loader;
 import com.teraime.poppyfield.room.FieldPadRepository;
 import com.teraime.poppyfield.room.VariableTable;
+import com.teraime.poppyfield.templates.LoadFragment;
+import com.teraime.poppyfield.templates.Page;
 
+import org.json.JSONObject;
+
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Observable;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -60,11 +72,12 @@ public class WorldViewModel extends AndroidViewModel {
     private Map<String,String> mWorkFlowContext,mCurrentGisLayerContext;
     private Map<String, String> mEvalProps;
     private static final int DEFAULT_THREAD_POOL_SIZE = 10;
+    private int mManifestModuleCount;
 
     public WorldViewModel(Application application) {
         super(application);
         globalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
-        this.app=globalPrefs.getString("App","poppyfield");
+        this.app=globalPrefs.getString("App","smabio");
         mAppPrefs = application.getSharedPreferences(app, Context.MODE_PRIVATE);
         mExecutorService = Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
         mRepository = new FieldPadRepository(application,mExecutorService);
@@ -74,7 +87,6 @@ public class WorldViewModel extends AndroidViewModel {
         myConf = new MutableLiveData<>(mLoader.getConfigs());
         loadState = new MutableLiveData<>();
         cachePath = application.getFilesDir().getPath();
-        mLoader.load(app,this);
         mActivity=application;
         mWorkFlowContext = new HashMap<>();
         mCurrentGisLayerContext = new HashMap<>();
@@ -151,10 +163,27 @@ public class WorldViewModel extends AndroidViewModel {
         mDBHelper = new DBHelper(mLoader.getTable().getColumnRealNames(),mAppPrefs);
         deleteAllGisObjects();
         mRepository.insertGisObjects(getAllgeoData(),mDBHelper.getColTranslator(),logPing);
+
     }
 
-    public void queryGisObjects(Map<String, String> keyMap) {
-        mRepository.queryGisObjects(keyMap,mDBHelper.getColTranslator());
+
+    public LiveData<JSONObject> queryGisObjects(Map<String, String> keyMap) {
+        Log.d("GLERP", keyMap.toString());
+        MutableLiveData<String> mLoadCounter = new MutableLiveData<>();
+        MutableLiveData<JSONObject> donePing = new MutableLiveData<>();
+        final Map<String,List<VariableTable>> result = Collections.synchronizedMap(new HashMap<>());
+        androidx.lifecycle.Observer<String> mObserver = load -> {
+            Log.d("GIS","Recieved "+load+". Result has "+result.size());
+            if (result.size() == 5) {
+                Log.d("GIS","got all - generating json");
+                JSONObject jeo = GeoJsonGenerator.print(result,mDBHelper.getColTranslator());
+                donePing.setValue(jeo);
+            }
+
+        };
+        mLoadCounter.observeForever(mObserver);
+        mRepository.queryGisObjects(keyMap,mDBHelper.getColTranslator(),mLoadCounter,result);
+        return donePing;
     };
 
     public Map<String,String> getVariableExtraFields(String key) {
@@ -236,9 +265,28 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
     public void generateLayer(Block gisBlock) {
-        mRepository.generateLayer(gisBlock,getCacheFolder(),getSingleObjectContext());
+        String object_context = gisBlock.getAttr("obj_context");
+        Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),getSingleObjectContext());
+        LiveData<JSONObject> geoLiveD = queryGisObjects(gisLayerContext);
+        final Observer<JSONObject> mObserver = jsonObj -> {
+            mRepository.generateLayer(gisBlock,getCacheFolder(),gisLayerContext,jsonObj);
+        };
+        geoLiveD.observeForever(mObserver);
+
+
     }
 
 
+    public void setModuleCount(int i) {
+        mManifestModuleCount = i;
+    }
+
+    public int getModuleCount() {
+        return mManifestModuleCount;
+    }
+
+    public void startLoad() {
+        mLoader.load(app,this);
+    }
 }
 

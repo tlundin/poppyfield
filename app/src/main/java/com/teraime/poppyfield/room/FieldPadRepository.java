@@ -42,6 +42,7 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -175,21 +176,23 @@ public class FieldPadRepository {
 
     }
 
-    public void queryGisObjects(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate) {
-        final List<String> gisVars = new ArrayList<String>(Arrays.asList("'geotype'","'gistyp'","'objektid'","'subgistyp'","'gpscoord'"));
-        for (String var:gisVars) {
+    public void queryGisObjects(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate, MutableLiveData<String> mLoadCounter,Map<String,List<VariableTable>> varRawL) {
+
+        for (String var:GisConstants.gisVars) {
             executorService.execute(
                     new Runnable() {
                         @Override
                         public void run() {
                             StringBuilder sb = buildQueryBaseFromMap(wfKeyMap, colTranslate);
-                            sb.append("var = ");
+                            sb.append("var = '");
                             sb.append(var);
+                            sb.append("'");
                             Log.d("SQL", "Query: " + sb.toString());
                             SimpleSQLiteQuery query = new SimpleSQLiteQuery(sb.toString());
                             List<VariableTable> result = mVDao.latestMatch(query);
-                            Log.d("SQL", result.toString());
-
+                            varRawL.put(var,result);
+                            Log.d("SQL", "Posting "+var);
+                            mLoadCounter.postValue(var);
                         }
                     }
             );
@@ -233,6 +236,7 @@ public class FieldPadRepository {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                logPing.postValue("done");
             }
         });
 
@@ -266,7 +270,7 @@ public class FieldPadRepository {
         }
     }
 
-    public void generateLayer(Block gisBlock, String cacheFolder, Map<String,String> context) {
+    public void generateLayer(Block gisBlock, String cacheFolder, Map<String, String> gisLayerContext, final JSONObject geoJsonData) {
 
         executorService.execute(new Runnable() {
             @Override
@@ -274,21 +278,19 @@ public class FieldPadRepository {
                 boolean createAllowed = gisBlock.getAttr("create_allowed").equals("true");
                 //TODO: REMOVE
                 if (!createAllowed) {
-                    String object_context = gisBlock.getAttr("obj_context");
                     //Trakt + gistyp
-                    Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),context);
                     String gisType = gisLayerContext.get("gistyp");
                     Log.d("GIPS","context "+gisLayerContext);
                     if (gisType != null) {
                         try {
-                            //Create JSON here
-                            long t = System.currentTimeMillis();
-                            File source = Paths.get(cacheFolder, "cache", gisType).toFile();
-                            JSONObject geoJsonData = new JSONObject(convert(source));
-                            Pair<Block,JSONObject> pair = new Pair<>(gisBlock,geoJsonData);
-
+                            Pair<Block,JSONObject> pair;
+                            if (geoJsonData == null) {
+                                long t = System.currentTimeMillis();
+                                File source = Paths.get(cacheFolder, "cache", gisType).toFile();
+                                pair = new Pair<>(gisBlock,new JSONObject(convert(source)));
+                            } else
+                                pair = new Pair<>(gisBlock,geoJsonData) ;
                             jsonObjLD.postValue(pair);
-                            Log.d("TIME","CreateLayer Here after "+(System.currentTimeMillis()-t));
                         } catch (JSONException | IOException e) {
                             e.printStackTrace();
                         }

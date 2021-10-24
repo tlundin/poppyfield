@@ -25,11 +25,7 @@ public class DBHelper {
         Map<String,String> ret = new HashMap();
         for (String key:rawContext.keySet()) {
             String dbKey = realToDBColumnName.get(key);
-            if (dbKey != null)
-                ret.put(dbKey,rawContext.get(key));
-            else
-                Logger.gl().e("Failed keymap for "+key);
-
+            ret.put(dbKey==null?key:dbKey,rawContext.get(key));
         }
         return ret;
     }
@@ -69,7 +65,7 @@ public class DBHelper {
         for (int i = 0; i < columnRealNames.size(); i++) {
             //Log.d("nils","checking keypart "+keyParts.get(i));
             if (realToDBColumnName.containsKey(columnRealNames.get(i)))
-                Log.d("DBHelper", "Key " + columnRealNames.get(i) + " already exists..skipping");
+                Log.d("DBHelper", "Key " + columnRealNames.get(i) + " already exists with value "+realToDBColumnName.get(columnRealNames.get(i)));
             else {
                 Log.d("DBHelper", "Found new column key " + columnRealNames.get(i));
                 if (columnRealNames.get(i).isEmpty()) {
@@ -87,7 +83,7 @@ public class DBHelper {
         Log.d("DBHelper", "Keys added: ");
         Set<String> s = realToDBColumnName.keySet();
         for (String e : s)
-            Log.d("DBHelper", "Key: " + e + "Value:" + realToDBColumnName.get(e));
+            Log.d("DBHelper", "Key: " + e + " Value:" + realToDBColumnName.get(e));
 
 
 

@@ -176,12 +176,9 @@ public class GeoJSONExporter  {
 						writer.name("coordinates");
 						Log.d("brex","RUTA: "+rutMap.get(keyUID));
 						Log.d("brex","GID: "+keyUID);
-
 						if (isPoly||isLineString)
 							writer.beginArray();
-
 						for (String polygon : polygons) {
-
 							String[] coords = polygon.split(",");
 							if (isPoly)
 								writer.beginArray();

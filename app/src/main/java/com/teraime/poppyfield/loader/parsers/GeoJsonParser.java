@@ -22,6 +22,7 @@ import java.util.TreeMap;
 public class GeoJsonParser {
     public static List<GisObject> parse(JsonReader reader,String type) throws IOException {
         final List<GisObject> myGisObjects = new ArrayList<>();
+        String geoType=null;
 
         try {
             reader.beginObject();
@@ -78,7 +79,7 @@ public class GeoJsonParser {
                                     keyChain.put(NamedVariables.AreaTerm, rutaId);
                                 //Add geotype to attributes so that the correct object can be used at export.
                                 keyChain.put(GisConstants.TYPE_COLUMN, type);
-                                attributes.put(GisConstants.Geo_Type, type);
+                                attributes.put(GisConstants.Geo_Type, geoType);
                                 propF = true;
                                 break;
                             case "geometry":
@@ -98,11 +99,11 @@ public class GeoJsonParser {
                                     switch (nName) {
                                         case "type":
                                             //This is the geotype, eg. "polygon"
-                                            type = getAttribute(reader);
+                                            geoType = getAttribute(reader);
                                             geoTypeF = true;
-                                            if (type == null)
+                                            if (geoType == null)
                                                 throw new MalformedJsonException("Type field expected (point, polygon..., but got null");
-                                            type = type.trim();
+                                            geoType = geoType.trim();
                                             break;
                                         case "coordinates":
                                             coordinatesF = true;
@@ -186,13 +187,13 @@ public class GeoJsonParser {
                                     }
                                 }
                                 //now we have type and coordinates.
-                                switch (type) {
+                                switch (geoType) {
                                     case GisConstants.LINE_STRING:
                                     case GisConstants.MULTI_POINT:
                                         if (myCoordinates != null && !myCoordinates.isEmpty())
                                             myGisObjects.add(new GisObject(keyChain, myCoordinates, attributes));
                                         else
-                                            Logger.gl().e( "No coordinates for multipoint in " + type + "!");
+                                            Logger.gl().e( "No coordinates for multipoint in " + geoType + "!");
                                         break;
 
                                     case GisConstants.POLYGON:

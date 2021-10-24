@@ -68,7 +68,6 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
             model.getMap().addGroundOverlay(new GroundOverlayOptions()
             .positionFromBounds(latLngBounds)
             .image(model.getmImgOverlay()));
-            GisMapTemplate.this.getActivity().findViewById(R.id.loadingPanel).setVisibility(View.GONE);
             model.getMap().moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 0));
             model.setLoadState("DONE");
         };

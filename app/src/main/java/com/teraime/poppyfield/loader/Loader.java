@@ -1,6 +1,5 @@
 package com.teraime.poppyfield.loader;
 
-import android.os.Looper;
 import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
@@ -18,9 +17,13 @@ import com.teraime.poppyfield.loader.Configurations.WorkflowBundle;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Loader {
 
@@ -49,6 +52,7 @@ public class Loader {
         mWorld = v;mApp = app;
 
                 ////////////////
+                loadManifest();
                 loadGisObjects();
                 loadWorkFlows();
                 loadSpinners();
@@ -57,10 +61,49 @@ public class Loader {
 
     }
 
-    private void loadGisObjects() {
+    private enum Mode {CORE,GIS,EXTRA};
 
-        List<List<String>> geoJsonFiles = new ArrayList<>();
+    private void loadManifest() {
+        AtomicReference<Mode> m= new AtomicReference<>(Mode.CORE);
+        mWorld.setModuleCount(15);
         WebLoader.getManifest(fileList -> {
+            if (fileList !=null) {
+                Log.d("MANIFEST", fileList.toString());
+                Set<String> headers = new HashSet<String>(Arrays.asList("core", "gis_objects", "extras"));
+                int i = 0;
+                String[] nameVer;
+                if (fileList.containsAll(headers)) {
+                    for (String configFile : fileList) {
+                        if (headers.contains(configFile)) {
+                            switch (configFile) {
+                                case "core":
+                                    m.set(Mode.CORE);
+                                    continue;
+                                case "gis_objects":
+                                    m.set(Mode.GIS);
+                                    continue;
+                                default:
+                                    m.set(Mode.EXTRA);
+                                    continue;
+                            }
+                        }
+                        Log.d("M", configFile);
+                        nameVer = configFile.split(",");
+                        if (nameVer.length == 2)
+                            i++;
+                    }
+                    mWorld.setModuleCount(i-headers.size());
+                } else
+                    Logger.gl().e("incomplete manifest");
+            }
+
+        }, mApp);
+
+    }
+
+    private void loadGisObjects() {
+        List<List<String>> geoJsonFiles = new ArrayList<>();
+        WebLoader.getGisManifest(fileList -> {
             //List<String> mManifest = (List<String>) fileList;
             WebLoader.loadGisModules(_d -> {
                 int i = 0;

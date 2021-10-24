@@ -51,18 +51,14 @@ public class MainActivity extends AppCompatActivity {
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         PageStack stack = model.getPageStack();
 
-        final Observer<List<Config<?>>> loadObserver = configs -> {
-            if (configs.size() == 4 ) {
+        final Observer<String> loadObserver = ping -> {
+            if (ping.equals("done")) {
                 populateMenu(navi.getMenu(), model.getMenuDescriptor());
-                Logger.gl().d("MORTIS", "DONE");
-                //if (model.isAppEntry())
-                //    drawerLayout.openDrawer(GravityCompat.START);
+                if (model.isAppEntry())
+                  drawerLayout.openDrawer(GravityCompat.START);
+                Map<String,String> tst = new HashMap<>();
+            } else if (ping.equals("Table"))
                 model.prepareGeoData();
-                Map<String, String> test = new HashMap<>();
-                test.put("trakt","180");
-
-                model.queryGisObjects(test);
-            }
         };
 
 
@@ -95,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
 
         stack.getPageLive().observe(this,pageObserver);
-        model.getMyConf().observe(this, loadObserver);
+        model.getLogObservable().observe(this, loadObserver);
     }
 
 

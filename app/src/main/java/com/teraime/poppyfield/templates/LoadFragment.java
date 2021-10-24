@@ -1,5 +1,7 @@
 package com.teraime.poppyfield.templates;
 
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,14 +35,19 @@ public class LoadFragment extends Fragment {
             TextView tv = v.findViewById(R.id.loadHeader);
             ProgressBar pb = v.findViewById(R.id.progressBar);
             LiveData<String> progress = model.getLogObservable();
-            pb.setMax(15);
+            Drawable progressDrawable = pb.getProgressDrawable().mutate();
+            progressDrawable.setColorFilter(Color.RED, android.graphics.PorterDuff.Mode.SRC_IN);
+            pb.setProgressDrawable(progressDrawable);
+
             AtomicInteger x= new AtomicInteger();
             final Observer<String> logObserver = subject -> {
-                tv.setText("Loading "+subject);
+                pb.setMax(model.getModuleCount());
+                tv.setText("Loading "+subject+" "+x+"/"+pb.getMax());
                 pb.setProgress(x.getAndIncrement(),true);
             };
 
             progress.observe(this.getViewLifecycleOwner(),logObserver);
+            model.startLoad();
 
             return v;
 

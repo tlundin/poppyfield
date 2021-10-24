@@ -25,8 +25,13 @@ public class WebLoader {
 
     static String protocol = "http://";
 
-    
     public static void getManifest(LoaderCb callback, String app) {
+        String Manifest = "Manifest";
+        String url = S.SERVER + "/" + app + "/";
+        new DownloadFileTask(callback).execute(protocol+ url + Manifest);
+    }
+    
+    public static void getGisManifest(LoaderCb callback, String app) {
         String Manifest = "content.txt";
         String url = S.SERVER + "/" + app + "/gis_objects/";
         new DownloadFileTask(callback).execute(protocol+ url + Manifest);
