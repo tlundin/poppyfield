@@ -52,13 +52,14 @@ public class MainActivity extends AppCompatActivity {
         PageStack stack = model.getPageStack();
 
         final Observer<String> loadObserver = ping -> {
-            if (ping.equals("done")) {
+            if (ping.equals("Table") && model.getModuleCount()>0)
+                model.prepareGeoData();
+            else if (ping.equals("done") || ping.equals("Table")) {
                 populateMenu(navi.getMenu(), model.getMenuDescriptor());
                 if (model.isAppEntry())
-                  drawerLayout.openDrawer(GravityCompat.START);
-                Map<String,String> tst = new HashMap<>();
-            } else if (ping.equals("Table"))
-                model.prepareGeoData();
+                    drawerLayout.openDrawer(GravityCompat.START);
+                model.setAllGisTypesLoaded();
+            }
         };
 
 

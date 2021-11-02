@@ -16,6 +16,12 @@ public class WFRunner {
                 case "block_add_gis_point_objects":
                     visiBlocks.add(b);
                     break;
+                case "block_conditional_continuation":
+                case "block_jump":
+                    Log.d("v",b.getBlockType());
+                    Log.d("v",b.getBlockId());
+                    Log.d("v",b.getAttrs().toString());
+                    break;
                 case "block_start":
                 case "block_define_page":
                 case "block_no_op":

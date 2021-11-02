@@ -7,24 +7,22 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 
 import com.teraime.poppyfield.R;
 
-public class DefaultTemplate extends TemplateFragment {
-
+public class PageWithAggregationTemplate extends TemplateFragment {
+    Page mPage = null;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return super.onCreateView(inflater,container,savedInstanceState, R.layout.template_wf_default_no_scroll);
-    }
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        View v = super.onCreateView(inflater, container, savedInstanceState, R.layout.template_page_with_aggregation);
+        mPage = (Page)model.getPageStack().getInfocusPage();
+        mPage.onCreate(this);
+        return v;
     }
 
-    @Override
+        @Override
     public String getName() {
-        return "DefaultTemplate";
+        return "PageWithAggregationTemplate";
     }
 }

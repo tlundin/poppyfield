@@ -34,6 +34,6 @@ public class DefaultNoScrollTemplate extends TemplateFragment {
 
 	@Override
 	public String getName() {
-		return "TjorvBoll";
+		return "DefaultNoScrollTemplate";
 	}
 }

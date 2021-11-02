@@ -58,4 +58,8 @@ public class GisObject {
         else
             return null;
     }
+
+    public List<Location> getCoordinates() {
+        return myCoordinates;
+    }
 }

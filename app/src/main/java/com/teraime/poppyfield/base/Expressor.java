@@ -4,6 +4,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.teraime.poppyfield.gis.Geomatte;
+import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import java.io.Serializable;
@@ -15,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
+import java.util.UUID;
 
 
 /**
@@ -664,8 +667,10 @@ public class Expressor {
             switch(getType()) {
                 case variable:
                     String value = myAttrs.get(myToken.str);
+
                     if (value==null ) {
-                        System.out.println("Variable '"+this.toString()+"' does not have a value or Variable is missing.");
+                        Log.d("EXPR","Variable '"+this.toString()+"' does not have a value or Variable is missing.");
+                        Log.d("EXPR","Attributes: "+myAttrs.toString()+" this "+this.toString());
                         return null;
                     }
 
@@ -1055,7 +1060,7 @@ public class Expressor {
 
         @Override
         public Object eval(Map <String,String> myAttrs) {
-
+            WorldViewModel mWorld = WorldViewModel.getStaticWorldRef();
             //Log.d("vortex","Function eval: "+getType());
 
             Object result=null;
@@ -1200,11 +1205,41 @@ public class Expressor {
                     return Clock.getWeekNumber();
                 case getSweDate:
                     return Clock.getSweDate();
+
+
+                case getGISobjectLength:
+
+                case getGISobjectArea:
+                    Log.d("vortex","getArea called");
+                    //Get a static reference to the world.
+                    assert mWorld !=null;
+
+                    GisObject touchedGop = mWorld.getSelectedGop();
+                    if (touchedGop!=null) {
+
+                        if ("getGISobjectLength".equals(getType().name()))
+                            return Geomatte.getCircumference(touchedGop.getCoordinates());
+                        else
+                            return Geomatte.getArea(touchedGop.getCoordinates());
+                    } else
+                        Log.d("zappa","no gop");
+                    return null;
+
                 case getColumnValue:
                     if (checkPreconditions(evalArgs,1,No_Null_Literal)) {
-                        Log.d("EXPR","eval args in getcol"+(evalArgs==null?"null":evalArgs.toString()));
-                            return myAttrs.get((String) evalArgs.get(0));
+                        Log.d("EXPR","eval args in getcolumnValue"+(evalArgs==null?"null":evalArgs.toString()));
+                        //TODO: TEMP CODE
+                        /*
+                        if (myAttrs == null) {
+                            myAttrs = new HashMap<>();
+                            myAttrs.put("trakt", "1234");
+                            myAttrs.put("uid", UUID.randomUUID().toString());
+                            myAttrs.put("gistyp", "akerholme");
 
+                        }
+                        */
+
+                        return myAttrs.get((String) evalArgs.get(0));
                     }
                     break;
                 case getUserName:
@@ -1466,7 +1501,7 @@ public class Expressor {
             return null;
         }
         //evaluate in default context.
-        Log.d("franco","Analyzing "+expressions.toString()+"with context "+(myAttrs==null?"null":myAttrs.toString()));
+        //Log.d("franco","Analyzing "+expressions.toString()+"with context "+(myAttrs==null?"null":myAttrs.toString()));
         StringBuilder endResult = new StringBuilder();
         for (EvalExpr expr:expressions) {
             //tret=null;

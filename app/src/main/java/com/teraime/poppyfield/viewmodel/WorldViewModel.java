@@ -24,6 +24,7 @@ import com.teraime.poppyfield.base.GeoJsonGenerator;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
+import com.teraime.poppyfield.base.Table;
 import com.teraime.poppyfield.base.ValueProps;
 import com.teraime.poppyfield.base.Variable;
 import com.teraime.poppyfield.gis.GisConstants;
@@ -50,8 +51,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class WorldViewModel extends AndroidViewModel {
-
-
+    private static WorldViewModel mStaticWorld;
     private final FieldPadRepository mRepository;
     private final LiveData<List<Config<?>>> myConf;
     private final MutableLiveData<String> loadState;
@@ -72,12 +72,12 @@ public class WorldViewModel extends AndroidViewModel {
     private Map<String,String> mWorkFlowContext,mCurrentGisLayerContext;
     private Map<String, String> mEvalProps;
     private static final int DEFAULT_THREAD_POOL_SIZE = 10;
-    private int mManifestModuleCount;
+    private GisObject mTouchedGeoObject;
 
     public WorldViewModel(Application application) {
         super(application);
         globalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
-        this.app=globalPrefs.getString("App","smabio");
+        this.app=globalPrefs.getString("App","poppyfield");
         mAppPrefs = application.getSharedPreferences(app, Context.MODE_PRIVATE);
         mExecutorService = Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
         mRepository = new FieldPadRepository(application,mExecutorService);
@@ -90,6 +90,7 @@ public class WorldViewModel extends AndroidViewModel {
         mActivity=application;
         mWorkFlowContext = new HashMap<>();
         mCurrentGisLayerContext = new HashMap<>();
+        mStaticWorld = this;
     }
 
     public String getApp() { return app; }
@@ -108,6 +109,7 @@ public class WorldViewModel extends AndroidViewModel {
     public void deleteAllGisObjects() {
         mRepository.deleteAllHistorical();
     }
+    public void deleteGisObjects(List<String> gisToDelete) { if (gisToDelete==null) deleteAllGisObjects(); else mRepository.deleteSomeHistorical(gisToDelete,mDBHelper.getColTranslator());}
     public void insert(VariableTable variable) { mRepository.insert(variable); }
     public void updateBoundary(String metaSource) {
                 mRepository.updateBoundary(app, metaSource);
@@ -160,8 +162,7 @@ public class WorldViewModel extends AndroidViewModel {
 
     public void prepareGeoData() {
         MutableLiveData<String> logPing = getLogObservable();
-        mDBHelper = new DBHelper(mLoader.getTable().getColumnRealNames(),mAppPrefs);
-        deleteAllGisObjects();
+        deleteGisObjects(mLoader.getGisFilesToLoad());
         mRepository.insertGisObjects(getAllgeoData(),mDBHelper.getColTranslator(),logPing);
 
     }
@@ -174,7 +175,7 @@ public class WorldViewModel extends AndroidViewModel {
         final Map<String,List<VariableTable>> result = Collections.synchronizedMap(new HashMap<>());
         androidx.lifecycle.Observer<String> mObserver = load -> {
             Log.d("GIS","Recieved "+load+". Result has "+result.size());
-            if (result.size() == 5) {
+            if (result.size() == GisConstants.gisVariables.size()) {
                 Log.d("GIS","got all - generating json");
                 JSONObject jeo = GeoJsonGenerator.print(result,mDBHelper.getColTranslator());
                 donePing.setValue(jeo);
@@ -267,9 +268,20 @@ public class WorldViewModel extends AndroidViewModel {
     public void generateLayer(Block gisBlock) {
         String object_context = gisBlock.getAttr("obj_context");
         Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),getSingleObjectContext());
+        Map<String, String> wfContext = getWorkflowContext();
+        //combine the context
+        if (wfContext != null) {
+            for (String key:wfContext.keySet()) {
+                gisLayerContext.put(key,wfContext.get(key));
+            }
+        }
+        Log.d("layer","layer context is now "+gisLayerContext.toString());
         LiveData<JSONObject> geoLiveD = queryGisObjects(gisLayerContext);
         final Observer<JSONObject> mObserver = jsonObj -> {
-            mRepository.generateLayer(gisBlock,getCacheFolder(),gisLayerContext,jsonObj);
+            if (jsonObj == null)
+                Log.d("generateLayer","Skipping layergen for "+gisBlock.getAttrs().get("label"));
+            else
+                mRepository.generateLayer(gisBlock,getCacheFolder(),gisLayerContext,jsonObj);
         };
         geoLiveD.observeForever(mObserver);
 
@@ -277,16 +289,35 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
 
-    public void setModuleCount(int i) {
-        mManifestModuleCount = i;
-    }
-
     public int getModuleCount() {
-        return mManifestModuleCount;
+        if (mLoader.getGisFilesToLoad()!=null)
+            return mLoader.getGisFilesToLoad().size();
+        else
+            return 0;
     }
 
     public void startLoad() {
         mLoader.load(app,this);
+    }
+
+    public void setAllGisTypesLoaded() {
+        mLoader.markAllLoaded();
+    }
+
+    public void createDbHelper(Table t) {
+        mDBHelper = new DBHelper(t.getColumnRealNames(),mAppPrefs);
+    }
+
+    public static WorldViewModel getStaticWorldRef() {
+        return mStaticWorld;
+    }
+
+    public GisObject getSelectedGop() {
+        return mTouchedGeoObject;
+    }
+
+    public void setSelectedGop(GisObject selected) {
+        mTouchedGeoObject = selected;
     }
 }
 

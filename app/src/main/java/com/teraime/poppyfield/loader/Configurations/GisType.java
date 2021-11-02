@@ -37,8 +37,4 @@ public class GisType extends Config<GisType> {
         return type;
     }
 
-
-    public List<String> getRawData() {
-        return rawData;
-    }
 }

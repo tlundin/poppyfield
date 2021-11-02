@@ -17,16 +17,27 @@ import java.util.Map;
 
 public class GeoJsonGenerator {
 
-    static StringWriter sw = new StringWriter();
-    static JsonWriter writer = new JsonWriter(sw);
+    static StringWriter sw;
+    static JsonWriter writer;
 
     public static JSONObject print(Map<String, List<VariableTable>> in, DBHelper.ColTranslate colTranslator) {
 
         try {
+            int max = in.get("geotype").size();
+            if (max==0) {
+                Log.d("GEOGEN","Empty entry");
+                return null;
+            }
+
+            for (String key:in.keySet()) {
+                Log.d("GEOGEN","key: "+key+" list: "+in.get(key).size());
+            }
+            sw = new StringWriter();
+            writer = new JsonWriter(sw);
             writer.setIndent("  ");
             //Begin main obj
             writer.beginObject();
-            Log.d("nils","Writing header");
+            //Log.d("nils","Writing header");
             write("name","Export");
             write("type","FeatureCollection");
             writer.name("crs");
@@ -42,7 +53,7 @@ public class GeoJsonGenerator {
             writer.beginArray();
             boolean notDone = true;
             int c=0;
-            int max = in.get("geotype").size();
+
             while (c<max) {
                 VariableTable geoTypeVT = in.get("geotype").get(c);
                 writer.beginObject();
@@ -56,7 +67,7 @@ public class GeoJsonGenerator {
                 boolean isPoly= "Polygon".equalsIgnoreCase(geoType);
                 boolean isLineString = "Linestring".equalsIgnoreCase(geoType);
 
-                String coordinates = in.get("gpscoord").get(c).getValue();
+                String coordinates = in.get(GisConstants.GPS_Coord_Var_Name).get(c).getValue();
                 String[] polygons = coordinates.split("\\|");
 
                 if (isPoly||isLineString)
@@ -73,7 +84,7 @@ public class GeoJsonGenerator {
                     for (int i = 0; i < coords.length; i += 2) {
  //                       Log.d("vortex", "coord [" + i + "] :" + coords[i] + " [" + (i + 1) + "] :" + coords[i + 1]);
                         writer.beginArray();
-                        LatLng ll = Geomatte.convertToLatLong(Double.parseDouble(coords[i+1]), Double.parseDouble(coords[i]));
+                        LatLng ll = Geomatte.convertToLatLong(Double.parseDouble(coords[i]), Double.parseDouble(coords[i+1]));
                         printCoord(writer,ll.longitude+"");
                         printCoord(writer, ll.latitude+"");
                         writer.endArray();
@@ -87,9 +98,10 @@ public class GeoJsonGenerator {
                 writer.name("properties");
                 writer.beginObject();
                 write(GisConstants.FixedGid, geoTypeVT.getUUID());
-                Log.d("DBHelper  EXO",colTranslator.ToDB("trakt"));
-                String trakt = geoTypeVT.getCol(colTranslator.ToDB(NamedVariables.AreaTerm));
-                write(NamedVariables.AreaTerm.toUpperCase(),trakt);
+                write("UID", geoTypeVT.getUUID());
+                //Log.d("",colTranslator.ToDB("trakt"));
+                //String trakt = geoTypeVT.getCol(colTranslator.ToDB(NamedVariables.AreaTerm));
+                //write(NamedVariables.AreaTerm.toUpperCase(),trakt);
                 write("AUTHOR", geoTypeVT.getAuthor());
                 write("TEAM", geoTypeVT.getLag());
                 write("ÅR", geoTypeVT.getYear());
@@ -105,15 +117,15 @@ public class GeoJsonGenerator {
                 write(colTranslator.ToReal("L10"),geoTypeVT.getL10());
                 writer.endObject();
                 writer.endObject();
-                Log.d("BLAHA", "gistyp is  " + geoTypeVT.getCol(colTranslator.ToDB("gistyp")));
-                Log.d("BLAHA", "trakt  is  " + geoTypeVT.getCol(colTranslator.ToDB("trakt")));
+            //    Log.d("BLAHA", "gistyp is  " + geoTypeVT.getCol(colTranslator.ToDB("gistyp")));
+            //    Log.d("BLAHA", "trakt  is  " + geoTypeVT.getCol(colTranslator.ToDB("trakt")));
                 c++;
             }
             //End of array.
             writer.endArray();
             //End of all.
             writer.endObject();
-            //Log.d("GIS",sw.toString());
+            Log.d("GEOGEN",sw.toString());
             return new JSONObject(sw.toString());
         } catch (Exception e) {
             e.printStackTrace();
@@ -143,6 +155,7 @@ public class GeoJsonGenerator {
         }
         catch (IOException e) {
             e.printStackTrace();
+
         }
     }
 

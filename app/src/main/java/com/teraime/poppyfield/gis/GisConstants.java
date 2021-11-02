@@ -25,8 +25,11 @@ public class GisConstants {
 	public static final String DefaultTag = "Def";
 	public static final String GPS_Coord_Var_Name = "gpscoord";
 	public static final String MULTI_POLYGON = "Multipolygon";
-	public static final String ObjectID ="OBJECTID";
-	public static final Set<String> gisVars = new HashSet<String>(Arrays.asList("geotype","gistyp","objektid","subgistyp","gpscoord"));
+	public static final String ObjectID ="objectid";
+	public static final Set<String> gisProperties = new HashSet<String>(Arrays.asList(Geo_Type,TYPE_COLUMN,ObjectID,"subgistyp","shape_area"));
+	public static final Set<String> gisVariables = new HashSet<String>(Arrays.asList("geotype","gistyp","objectid","subgistyp","shape_area",GPS_Coord_Var_Name));
+
+
 	public static int getGoogleMapType(String mapType) {
 		switch (mapType) {
 			case "normal":

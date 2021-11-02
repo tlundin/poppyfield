@@ -1,9 +1,11 @@
 package com.teraime.poppyfield.loader;
 
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
 
+import com.teraime.poppyfield.base.DBHelper;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.Spinners;
 import com.teraime.poppyfield.base.Table;
@@ -16,8 +18,10 @@ import com.teraime.poppyfield.loader.Configurations.VariablesConfiguration;
 import com.teraime.poppyfield.loader.Configurations.WorkflowBundle;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +40,8 @@ public class Loader {
     private Table t;
     private WorldViewModel mWorld;
     private String mApp;
+    private List<String> mFilesToLoadToDatabase = null;
+    private Map<String,String> gisFilesNewVersions = new HashMap<>();
 
 
 
@@ -50,10 +56,8 @@ public class Loader {
      */
     public void load(String app, WorldViewModel v) {
         mWorld = v;mApp = app;
-
                 ////////////////
                 loadManifest();
-                loadGisObjects();
                 loadWorkFlows();
                 loadSpinners();
                 loadTableData();
@@ -61,16 +65,32 @@ public class Loader {
 
     }
 
+    public List<String> getGisFilesToLoad() {
+        return mFilesToLoadToDatabase;
+    }
+
+    public void markAllLoaded() {
+        SharedPreferences.Editor editor = mWorld.getAppPrefs().edit();
+        editor.clear();
+        editor.commit();
+        for (String key:gisFilesNewVersions.keySet()) {
+            editor.putString(key,gisFilesNewVersions.get(key));
+            Log.d("LOADER","Saved "+key+" with value "+ gisFilesNewVersions.get(key));
+        }
+        editor.commit();
+    }
+
     private enum Mode {CORE,GIS,EXTRA};
 
     private void loadManifest() {
         AtomicReference<Mode> m= new AtomicReference<>(Mode.CORE);
-        mWorld.setModuleCount(15);
+        List<String> gisFilesToLoad = new ArrayList();
+        SharedPreferences prefs = mWorld.getAppPrefs();
         WebLoader.getManifest(fileList -> {
             if (fileList !=null) {
                 Log.d("MANIFEST", fileList.toString());
                 Set<String> headers = new HashSet<String>(Arrays.asList("core", "gis_objects", "extras"));
-                int i = 0;
+                int moduleCount = 0;
                 String[] nameVer;
                 if (fileList.containsAll(headers)) {
                     for (String configFile : fileList) {
@@ -89,47 +109,61 @@ public class Loader {
                         }
                         Log.d("M", configFile);
                         nameVer = configFile.split(",");
-                        if (nameVer.length == 2)
-                            i++;
+                        if (nameVer.length == 2) {
+                            //check if stored
+                            if (m.get() == Mode.GIS) {
+                                String currentVersion = prefs.getString(nameVer[0], null);
+                                Log.d("LOADER","current version for "+nameVer[0]+" is "+currentVersion);
+                                if (currentVersion == null || !currentVersion.equals(nameVer[1])) {
+                                    Log.d("LOADER","must load "+gisFilesToLoad);
+                                    gisFilesToLoad.add(nameVer[0]);
+                                    gisFilesNewVersions.put(nameVer[0],nameVer[1]);
+                                }
+                            }
+                        }
                     }
-                    mWorld.setModuleCount(i-headers.size());
-                } else
+                    loadGisModules(gisFilesToLoad);
+                } else {
                     Logger.gl().e("incomplete manifest");
+                    WebLoader.getGisManifest(_fileList -> {
+                        if (fileList == null)
+                            throw new IOException("Could not download the GIS manifest");
+                        loadGisModules(_fileList);
+                    }, mApp);
+                }
             }
 
         }, mApp);
 
     }
 
-    private void loadGisObjects() {
-        List<List<String>> geoJsonFiles = new ArrayList<>();
-        WebLoader.getGisManifest(fileList -> {
-            //List<String> mManifest = (List<String>) fileList;
+    private void loadGisModules(List<String> gisFilesToLoad) {
+        mFilesToLoadToDatabase = gisFilesToLoad;
+        if (gisFilesToLoad.isEmpty()) {
+            Log.d("LOADER","skipping gisfiles");
+            logPing.postValue("GisObjects");
+        } else {
+            List<List<String>> geoJsonFiles = new ArrayList<>();
             WebLoader.loadGisModules(_d -> {
                 int i = 0;
-
                 for (List<String> geoJ : geoJsonFiles) {
                     try {
                         long t1 = System.currentTimeMillis();
-                        String type = fileList.get(i++);
+                        String type = gisFilesToLoad.get(i++);
                         GisType gf = new GisType();
                         geoDataConfigs.add(gf.strip(geoJ).stringify().parse(type));
                         Tools.writeToCache(mWorld.getApplication(), gf.getType(), gf.getRawData());
-                        geoConfigMap.put(type,gf.getGeoObjects());
-                        logPing.postValue(type);
+                        geoConfigMap.put(type, gf.getGeoObjects());
                         Log.d("WROOM", gf.getRawData().toString());
                         long diff = (System.currentTimeMillis() - t1);
                         Logger.gl().d("PARSE", "Parsed " + type + "(" + gf.getVersion() + ") in " + diff + " millsec");
+                        logPing.postValue("GisObjects");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
-
-                Logger.gl().d("INSERT", "DELETE ALL CALLED");
-                logPing.postValue("GisObjects");
-            }, fileList, mApp, geoJsonFiles);
-        }, mApp);
-
+            }, gisFilesToLoad, mApp, geoJsonFiles);
+        }
     }
 
     private void loadWorkFlows() {
@@ -141,6 +175,7 @@ public class Loader {
                 try {
                     Log.d("WORK", moduleFile.toString());
                     wf = new WorkflowBundle().stringify(moduleFile).parse();
+                    Tools.writeToCache(mWorld.getApplication(), "wf", wf.getRawData());
                     mConfigs.add(wf);
                     logPing.postValue("Workflows");
                 } catch (Exception e) {
@@ -185,6 +220,7 @@ public class Loader {
                                         mConfigs.add(gc);
                                         mConfigs.add(vc);
                                         t = vc.getTable();
+                                        mWorld.createDbHelper(t);
                                         //t.printTable();
                                         ((MutableLiveData)mWorld.getMyConf()).postValue(mConfigs);
                                         logPing.postValue("Table");

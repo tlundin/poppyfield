@@ -13,6 +13,7 @@ import com.teraime.poppyfield.base.S;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -103,7 +104,11 @@ public class WebLoader {
             return file;
         }
         protected void onPostExecute(List<String> file) {
-            cb.loaded(file);
+            try {
+                cb.loaded(file);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

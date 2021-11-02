@@ -57,7 +57,7 @@ public class GISPage extends Page {
     }
 
     private void spawnLayers() {
-        List<Block> layers = workFlow.getBlocksOfType(Block.GIS_LAYER);
+        //List<Block> layers = workFlow.getBlocksOfType(Block.GIS_LAYER);
         List<Block> gisBlocks = workFlow.getBlocksOfType(Block.GIS_POINTS);
         for (Block gisBlock : gisBlocks) {
             model.generateLayer(gisBlock);
@@ -65,8 +65,6 @@ public class GISPage extends Page {
     }
 
     public void drawLayer(Block gisBlock, JSONObject geoJsonData) {
-        List<Block> layers = workFlow.getBlocksOfType(Block.GIS_LAYER);
-        List<Block> gisBlocks = workFlow.getBlocksOfType(Block.GIS_POINTS);
         Log.d("v", "GETBLOCKSOFTYPE " + workFlow.getBlocksOfType(Block.GIS_LAYER));
         GoogleMap googleMap = model.getMap();
         GeoJsonLayer gl = new GeoJsonLayer(googleMap, geoJsonData);
@@ -100,10 +98,10 @@ public class GISPage extends Page {
                 GeoJsonPolygonStyle ps = new GeoJsonPolygonStyle();
                 ps.setFillColor(color);
                 LatLng x = ((GeoJsonPolygon) feature.getGeometry()).getCoordinates().get(0).get(0);
-                addText(x, feature.getProperty("Shape_Area"), 1, 12);
+                addText(x, feature.getProperty("shape_area"), 1, 12);
                 feature.setPolygonStyle(ps);
             } else if (feature.getGeometry() instanceof GeoJsonPoint) {
-                Log.d("vagel","PROPS: "+props.toString());
+                //Log.d("vagel","PROPS: "+props.toString());
                 String label = gisblock.getLabel(props);
                 IconGenerator icg = new IconGenerator(model.getActivity());
                 icg.setStyle(IconGenerator.STYLE_WHITE);

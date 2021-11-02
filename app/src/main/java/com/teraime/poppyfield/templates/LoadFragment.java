@@ -3,6 +3,7 @@ package com.teraime.poppyfield.templates;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,7 +43,7 @@ public class LoadFragment extends Fragment {
             AtomicInteger x= new AtomicInteger();
             final Observer<String> logObserver = subject -> {
                 pb.setMax(model.getModuleCount());
-                tv.setText("Loading "+subject+" "+x+"/"+pb.getMax());
+                tv.setText(subject);
                 pb.setProgress(x.getAndIncrement(),true);
             };
 

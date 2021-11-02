@@ -17,4 +17,6 @@ public class Config<T> {
     public String getVersion() {
         return version;
     }
+
+    public List<String> getRawData() { return rawData; }
 }

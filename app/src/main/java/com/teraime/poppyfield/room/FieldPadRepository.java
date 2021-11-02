@@ -1,7 +1,5 @@
 package com.teraime.poppyfield.room;
 
-import static com.teraime.poppyfield.gis.Geomatte.convert;
-
 import android.app.Application;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,6 +10,7 @@ import android.util.Pair;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 import androidx.sqlite.db.SimpleSQLiteQuery;
 
 import com.google.android.gms.maps.model.BitmapDescriptor;
@@ -20,7 +19,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.teraime.poppyfield.base.Block;
 import com.teraime.poppyfield.base.DBHelper;
-import com.teraime.poppyfield.base.Expressor;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.gis.Geomatte;
@@ -33,26 +31,19 @@ import com.teraime.poppyfield.loader.LoaderCb;
 import com.teraime.poppyfield.loader.WebLoader;
 import com.teraime.poppyfield.loader.parsers.JGWParser;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FieldPadRepository {
-
 
     private final VariableDAO mVDao;
     private final LiveData<List<VariableTable>> allVars;
@@ -67,6 +58,7 @@ public class FieldPadRepository {
     // dependency. This adds complexity and much more code, and this sample is not about testing.
     // See the BasicSample in the android-architecture-components repository at
     // https://github.com/googlesamples
+
     public FieldPadRepository(Application application, ExecutorService executorService) {
         FieldPadRoomDatabase db = FieldPadRoomDatabase.getDatabase(application);
         mVDao = db.variableDao();
@@ -86,12 +78,33 @@ public class FieldPadRepository {
 
     // You must call this on a non-UI thread or your app will throw an exception. Room ensures
     // that you're not doing any long running operations on the main thread, blocking the UI.
+    public LiveData<String> insertChecked(VariableTable variable) {
+        final MutableLiveData<String> doneM = new MutableLiveData<>();
+        FieldPadRoomDatabase.databaseWriteExecutor.execute(() -> {
+            mVDao.insert(variable);
+            doneM.postValue("DONE");
+        });
+        return doneM;
+    }
+
     public void insert(VariableTable variable) {
-        FieldPadRoomDatabase.databaseWriteExecutor.execute(() -> mVDao.insert(variable));
+        FieldPadRoomDatabase.databaseWriteExecutor.execute(() -> {
+            mVDao.insert(variable);
+        });
     }
 
     public void deleteAllHistorical() {
         FieldPadRoomDatabase.databaseWriteExecutor.execute(mVDao::deleteAllHistorical);
+    }
+
+    public void deleteSomeHistorical(List<String> gisToDelete, DBHelper.ColTranslate colTranslate) {
+        for (String gisType:gisToDelete) {
+            SimpleSQLiteQuery query =
+                    new SimpleSQLiteQuery("DELETE FROM variabler where year=='H' AND "+colTranslate.ToReal("gistyp")+"=='"+gisType+"'");
+            FieldPadRoomDatabase.databaseWriteExecutor.execute(() -> {
+                mVDao.deleteSomeHistorical(query);
+            });
+        }
     }
 
     public void insertGisObjects(GisObject g) {
@@ -177,8 +190,9 @@ public class FieldPadRepository {
     }
 
     public void queryGisObjects(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate, MutableLiveData<String> mLoadCounter,Map<String,List<VariableTable>> varRawL) {
+        //coordinates are saved as variables. Need to add to gisvars that only contain properties
 
-        for (String var:GisConstants.gisVars) {
+        for (String var:GisConstants.gisVariables) {
             executorService.execute(
                     new Runnable() {
                         @Override
@@ -218,57 +232,76 @@ public class FieldPadRepository {
         return queryBase;
     }
 
+    volatile int countGis=0;
+
     public void insertGisObjects(List<GisType> geoData, DBHelper.ColTranslate colTranslator, MutableLiveData<String> logPing) {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    for (GisType gisType : geoData) {
-                        long t1 = System.currentTimeMillis();
-                        List<GisObject> geo = gisType.getGeoObjects();
-                        for (GisObject g : geo)
-                            insertGisObject(g, colTranslator);
-                        long diff = (System.currentTimeMillis() - t1);
-                        Logger.gl().d("TIME", "Inserted " + geo.size() + " " + gisType.getType() + " in " + diff + " millsec");
-                        logPing.postValue(gisType.getType());
-
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                logPing.postValue("done");
+        countGis=0;
+        final AtomicInteger gisObjsToInsert=new AtomicInteger(0);
+        gisObjsToInsert.set(geoData.size());
+        for (GisType gisType : geoData) {
+            List<GisObject> geo = gisType.getGeoObjects();
+            long t1 = System.currentTimeMillis();
+            Iterator<GisObject> iterator = geo.iterator();
+            while (iterator.hasNext()) {
+            GisObject g = iterator.next();
+                if (!iterator.hasNext()) {
+                    LiveData<String> ld = insertGisObjectChecked(g, colTranslator);
+                    Logger.gl().d("TIME", "Inserting " + geo.size() + " " + gisType.getType() );
+                    ld.observeForever(new Observer<String>() {
+                        @Override
+                        public void onChanged(String ping) {
+                            countGis++;
+                            Log.d("INSERT", Integer.toString(countGis) + "targ " + gisObjsToInsert.toString());
+                            if (countGis == gisObjsToInsert.get()) {
+                                logPing.postValue("done");
+                            } else
+                                logPing.postValue(gisType.getType()+"("+countGis+"/"+gisObjsToInsert.toString()+")");
+                        }
+                    });
+                } else
+                    insertGisObject(g, colTranslator);
+                logPing.postValue(gisType.getType());
             }
-        });
-
+        }
+    }
+    private LiveData<String> insertGisObjectChecked(GisObject g, DBHelper.ColTranslate colTranslator) {
+        return _insertGis(g,colTranslator,true);
+    }
+    private void insertGisObject(GisObject g, DBHelper.ColTranslate colTranslator) {
+        _insertGis(g,colTranslator,false);
     }
 
-    private void insertGisObject(GisObject g, DBHelper.ColTranslate colTranslator) {
+    private LiveData<String> _insertGis(GisObject g, DBHelper.ColTranslate colTranslator,boolean tracked) {
         Map<String, String> am = new HashMap<>();
-        String var = GisConstants.GPS_Coord_Var_Name, value = g.coordsToString(), year = "H";
+        String year = "H";
         String colName;
         for (String key : g.getKeys().keySet()) {
             colName = colTranslator.ToDB(key);
             if (colName == null)
-                Logger.gl().e("missing key " + key);
+                Logger.gl().e("missing column " + key);
             else
                 am.put(colName, g.getKeys().get(key));
         }
-        VariableTable vt = new VariableTable(0, am.get("UUID"), year, var, value, null, null, -1, am.get("L1"), am.get("L2"), am.get("L3"), am.get("L4"), am.get("L5"), am.get("L6"), am.get("L7"), am.get("L8"), am.get("L9"), am.get("L10"));
-        insert(vt);
-        //insert all attributes.
+        VariableTable vt;
+        //Insert Attributes as Variables if they are supported.
         Map<String, String> attr = g.getAttributes();
-        Set<String> wanted = new HashSet<String>();
-        wanted.add("geotype");
-        wanted.add("gistyp");
-        wanted.add("objektid");
-        wanted.add("subgistyp");
+
         for (String key : attr.keySet()) {
-            if (wanted.contains(key)) {
+            if (GisConstants.gisProperties.contains(key.toLowerCase(Locale.ROOT))) {
                 vt = new VariableTable(0, am.get("UUID"), year, key, attr.get(key), null, null, -1, am.get("L1"), am.get("L2"), am.get("L3"), am.get("L4"), am.get("L5"), am.get("L6"), am.get("L7"), am.get("L8"), am.get("L9"), am.get("L10"));
                 insert(vt);
             }
         }
+        //Insert coordinates as a variable. Attach Observer if requested.
+        vt = new VariableTable(0, am.get("UUID"), year, GisConstants.GPS_Coord_Var_Name, g.coordsToString(), null, null, -1, am.get("L1"), am.get("L2"), am.get("L3"), am.get("L4"), am.get("L5"), am.get("L6"), am.get("L7"), am.get("L8"), am.get("L9"), am.get("L10"));
+        if (tracked)
+            return insertChecked(vt);
+        else {
+            insert(vt);
+            return null;
+        }
     }
+
 
     public void generateLayer(Block gisBlock, String cacheFolder, Map<String, String> gisLayerContext, final JSONObject geoJsonData) {
 
@@ -282,23 +315,22 @@ public class FieldPadRepository {
                     String gisType = gisLayerContext.get("gistyp");
                     Log.d("GIPS","context "+gisLayerContext);
                     if (gisType != null) {
-                        try {
                             Pair<Block,JSONObject> pair;
                             if (geoJsonData == null) {
-                                long t = System.currentTimeMillis();
-                                File source = Paths.get(cacheFolder, "cache", gisType).toFile();
-                                pair = new Pair<>(gisBlock,new JSONObject(convert(source)));
-                            } else
-                                pair = new Pair<>(gisBlock,geoJsonData) ;
-                            jsonObjLD.postValue(pair);
-                        } catch (JSONException | IOException e) {
-                            e.printStackTrace();
-                        }
-
+                                Log.d("genLayer","geojson null");
+                                //long t = System.currentTimeMillis();
+                                //File source = Paths.get(cacheFolder, "cache", gisType).toFile();
+                                //pair = new Pair<>(gisBlock,new JSONObject(convert(source)));
+                            } else {
+                                pair = new Pair<>(gisBlock, geoJsonData);
+                                jsonObjLD.postValue(pair);
+                            }
                     }
                 }
 
             }
         });
     }
+
+
 }

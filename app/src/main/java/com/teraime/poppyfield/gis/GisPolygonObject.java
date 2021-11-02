@@ -27,4 +27,6 @@ public class GisPolygonObject extends GisObject {
             ret = ret.substring(0,ret.length()-1);
         return ret;
     }
+
+
 }
