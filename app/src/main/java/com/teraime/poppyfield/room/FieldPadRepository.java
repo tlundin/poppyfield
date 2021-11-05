@@ -46,10 +46,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FieldPadRepository {
 
     private final VariableDAO mVDao;
-    private final LiveData<List<VariableTable>> allVars;
+    //private final LiveData<List<VariableTable>> allVars;
     private final MutableLiveData<LatLngBounds> mBoundaries;
     private final MutableLiveData<Pair> jsonObjLD;
     private final Map<Fragment, LatLngBounds> boundaryMap;
+    private final LiveData<List<VariableTable>> mGlobalsLD;
     private BitmapDescriptor mImgOverlay;
     private final File cacheFolder;
     private final ExecutorService executorService;
@@ -62,19 +63,18 @@ public class FieldPadRepository {
     public FieldPadRepository(Application application, ExecutorService executorService) {
         FieldPadRoomDatabase db = FieldPadRoomDatabase.getDatabase(application);
         mVDao = db.variableDao();
-        allVars = mVDao.getTimeOrderedList();
+        //allVars = mVDao.getTimeOrderedList();
         mBoundaries = new MutableLiveData<>();
         boundaryMap = new HashMap<>();
         cacheFolder = new File(application.getFilesDir(), "cache");
         this.executorService = executorService;
         jsonObjLD   = new MutableLiveData<>();
+        mGlobalsLD = mVDao.getAllGlobals();
     }
 
     // Room executes all queries on a separate thread.
     // Observed LiveData will notify the observer when the data has changed.
-    public LiveData<List<VariableTable>> getTimeOrderedList() {
-        return allVars;
-    }
+    //public LiveData<List<VariableTable>> getTimeOrderedList() {return allVars;}
 
     // You must call this on a non-UI thread or your app will throw an exception. Room ensures
     // that you're not doing any long running operations on the main thread, blocking the UI.
@@ -108,7 +108,7 @@ public class FieldPadRepository {
     }
 
     public void insertGisObjects(GisObject g) {
-
+        executorService.execute(() -> {mVDao.getAllGlobals();});
     }
 
     public void deleteAll() {
@@ -124,6 +124,8 @@ public class FieldPadRepository {
         return mImgOverlay;
     }
     public MutableLiveData<Pair> getJsonObjLD() { return jsonObjLD; }
+
+    public LiveData<List<VariableTable>> getGlobalVariables() { return mGlobalsLD; }
 
     public void updateBoundary(String app, String picName) {
         if (Tools.imageIsCached(cacheFolder,picName)) {
@@ -184,33 +186,38 @@ public class FieldPadRepository {
                     }
                 }
             });
-        } else
+        } else {
             Logger.gl().d("JGW", "No image metadata for " + picName);
+            mBoundaries.postValue(null);
+        }
 
     }
-
-    public void queryGisObjects(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate, MutableLiveData<String> mLoadCounter,Map<String,List<VariableTable>> varRawL) {
-        //coordinates are saved as variables. Need to add to gisvars that only contain properties
-
-        for (String var:GisConstants.gisVariables) {
-            executorService.execute(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            StringBuilder sb = buildQueryBaseFromMap(wfKeyMap, colTranslate);
-                            sb.append("var = '");
-                            sb.append(var);
-                            sb.append("'");
-                            Log.d("SQL", "Query: " + sb.toString());
-                            SimpleSQLiteQuery query = new SimpleSQLiteQuery(sb.toString());
-                            List<VariableTable> result = mVDao.latestMatch(query);
-                            varRawL.put(var,result);
-                            Log.d("SQL", "Posting "+var);
-                            mLoadCounter.postValue(var);
-                        }
-                    }
-            );
+    public LiveData<List<VariableTable>> getWorkflowVariables(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate) {
+        if (wfKeyMap!=null) {
+            StringBuilder sb = buildQueryBaseFromMap(wfKeyMap, colTranslate);
+            return mVDao.rawVarQuery(new SimpleSQLiteQuery(sb.toString()));
         }
+        return null;
+    }
+
+
+    public LiveData<List<VariableTable>> queryGisObjects(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate) {
+        //coordinates are saved as variables. Need to add to gisvars that only contain properties
+                            StringBuilder sb = buildQueryBaseFromMap(wfKeyMap, colTranslate);
+                            sb.append(" AND var IN ( ");
+                            Iterator<String> it = GisConstants.gisProperties.iterator();
+                            while(it.hasNext()) {
+                                String var = it.next();
+                                sb.append("'");
+                                sb.append(var);
+                                sb.append("'");
+                                if (it.hasNext())
+                                    sb.append(", ");
+                            }
+                            sb.append(" )");
+                            Log.d("SQL", "Query: " + sb.toString());
+                            LiveData<List<VariableTable>> liveQuery = mVDao.rawVarQuery(new SimpleSQLiteQuery(sb.toString()));
+        return liveQuery;
     }
 
 
@@ -219,14 +226,17 @@ public class FieldPadRepository {
         StringBuilder queryBase = new StringBuilder();
         queryBase.append("SELECT * FROM variabler WHERE ");
         if (wfKeyMap != null) {
-            for (String k : wfKeyMap.keySet()) {
+            Iterator<String> it = wfKeyMap.keySet().iterator();
+            while(it.hasNext()) {
+                String k = it.next();
                 String v = wfKeyMap.get(k);
                 queryBase.append(colTranslate.ToDB(k));
                 queryBase.append(" = '");
                 queryBase.append(v);
                 queryBase.append("'");
-                queryBase.append(" AND ");
-            }
+                if (it.hasNext())
+                    queryBase.append(" AND ");
+           }
         }
         Log.d("queryBase", queryBase.toString());
         return queryBase;
@@ -240,7 +250,6 @@ public class FieldPadRepository {
         gisObjsToInsert.set(geoData.size());
         for (GisType gisType : geoData) {
             List<GisObject> geo = gisType.getGeoObjects();
-            long t1 = System.currentTimeMillis();
             Iterator<GisObject> iterator = geo.iterator();
             while (iterator.hasNext()) {
             GisObject g = iterator.next();
@@ -303,7 +312,7 @@ public class FieldPadRepository {
     }
 
 
-    public void generateLayer(Block gisBlock, String cacheFolder, Map<String, String> gisLayerContext, final JSONObject geoJsonData) {
+    public void generateLayer(Block gisBlock, Map<String, String> gisLayerContext, final JSONObject geoJsonData) {
 
         executorService.execute(new Runnable() {
             @Override
@@ -331,6 +340,7 @@ public class FieldPadRepository {
             }
         });
     }
+
 
 
 }

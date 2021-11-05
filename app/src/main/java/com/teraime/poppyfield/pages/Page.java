@@ -1,4 +1,4 @@
-package com.teraime.poppyfield.templates;
+package com.teraime.poppyfield.pages;
 
 import android.util.Log;
 

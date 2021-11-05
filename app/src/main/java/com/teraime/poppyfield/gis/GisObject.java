@@ -19,30 +19,13 @@ public class GisObject {
 
     }
 
+    public List<Expressor.EvalExpr> getLabelE() { return  eLabel; }
+
     public Map<String, String> getKeys() {
         return keyChain;
     }
     public Map<String, String> getAttributes() {
         return attributes;
-    }
-    public String getLabel() {
-        if (label!=null)
-            return label;
-        if (eLabel==null)
-            return null;
-        label = Expressor.analyze(eLabel,keyChain);
-        //@notation for id
-        //TODO - move to expressor
-        if (label!=null && label.startsWith("@")) {
-            String key = label.substring(1, label.length());
-            if (key.length()>0)
-                label = keyChain.get(key);
-
-        }
-        if (label==null)
-            label = "";
-
-        return label;
     }
     public String coordsToString() {
         if (myCoordinates == null)

@@ -2,30 +2,31 @@ package com.teraime.poppyfield.base;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.util.Log;
 
 import androidx.fragment.app.Fragment;
 
-import com.teraime.poppyfield.templates.GISPage;
-import com.teraime.poppyfield.templates.LogScreen;
-import com.teraime.poppyfield.templates.Page;
+import com.teraime.poppyfield.pages.GISPage;
+import com.teraime.poppyfield.pages.Page;
+import com.teraime.poppyfield.room.VariableTable;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
-import java.io.BufferedReader;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class Tools {
 
@@ -165,4 +166,33 @@ public class Tools {
     }
 
 
+    //Extract the name value pair of a given variable entry.
+    public static Map<String,String> extractValues(List<VariableTable> variableTables) {
+        Map<String,String> ret = new HashMap<>();
+        for (VariableTable vt:variableTables) {
+            ret.put(vt.getVar(),vt.getValue());
+        }
+        return ret;
+    }
+
+    public static Map<String,String> extractColumns(VariableTable vt) {
+        return vt.toMap();
+    }
+
+
+    public static Map<String, String> jsonObjectToMap(String json) {
+        try {
+            Map<String, String> ret = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            JSONObject jo = new JSONObject(json);
+            for (Iterator<String> it = jo.keys(); it.hasNext(); ) {
+                String key = it.next();
+                ret.put(key, jo.getString(key));
+
+            }
+            return ret;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

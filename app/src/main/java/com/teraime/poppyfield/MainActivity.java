@@ -15,17 +15,13 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
-import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
 import com.teraime.poppyfield.base.Tools;
-import com.teraime.poppyfield.base.Workflow;
-import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.templates.LoadFragment;
-import com.teraime.poppyfield.templates.Page;
+import com.teraime.poppyfield.pages.Page;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -112,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("KOOK",item.mElems.toString());
                     MenuItem entry = menu.add(R.id.wf_group, itemId++, orderIdx++, elem.get("target"));
                     entry.setOnMenuItemClickListener(item1 -> {
+                        Log.d("MainActivity","menu item clicked");
                         model.getPageStack().changePage(elem.get("target"));
                         drawerLayout.closeDrawer(GravityCompat.START);
                         return true;

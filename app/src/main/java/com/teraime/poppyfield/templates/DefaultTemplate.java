@@ -10,17 +10,17 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.teraime.poppyfield.R;
+import com.teraime.poppyfield.pages.Page;
 
 public class DefaultTemplate extends TemplateFragment {
-
+    Page mPage = null;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return super.onCreateView(inflater,container,savedInstanceState, R.layout.template_wf_default_no_scroll);
-    }
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        View v = super.onCreateView(inflater, container, savedInstanceState, R.layout.template_wf_default_no_scroll);
+        mPage = (Page)model.getPageStack().getInfocusPage();
+        mPage.onCreate(this);
+        return v;
     }
 
     @Override

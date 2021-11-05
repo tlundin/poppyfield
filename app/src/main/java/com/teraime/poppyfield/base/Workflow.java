@@ -32,11 +32,15 @@ public class Workflow {
     }
 
     public String getName() {
-        Log.d("ATTRS",blocks.get(0).getAttrs().toString());
         return blocks.get(0).mAttrs.get("workflowname");
     }
 
-    public List<Expressor.EvalExpr> getContext() { return mContext; }
+    @Override
+    public String toString() {
+        return getName();
+    }
+
+    public List<Expressor.EvalExpr> getRawContextKeys() { return mContext; }
     public List<Block> getBlocks() {
         return blocks;
     }

@@ -1,13 +1,12 @@
 package com.teraime.poppyfield.base;
 
+
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-
-import com.teraime.poppyfield.templates.Page;
+import com.teraime.poppyfield.pages.Page;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
-
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +16,8 @@ public class PageStack {
     final List<Page> mStack;
     final WorldViewModel model;
     final MutableLiveData<List<Page>> mPageLiveD;
-    public enum EventTypes { NONE, NEW_PAGE, POP};
+    public enum EventTypes { NONE, NEW_PAGE, POP}
+
     private EventTypes mEvent;
 
     public PageStack(WorldViewModel world) {
@@ -28,12 +28,30 @@ public class PageStack {
         //mStack.add(Tools.createPage(model,"LogScreen",null));
         mEvent = EventTypes.NONE;
     }
-
     public void changePage(String target) {
+        changePage(target, model.getWorkflowContext());
+    }
+
+    public void changePage(String target,Context mEvalContext) {
         Log.d("PAGESTACK",target);
         Workflow wf = model.getWorkFlowBundle().getWf(target);
-        Logger.gl().d("CHANGEPAGE",wf.getName()+" CONTEXT "+wf.getContext());
-        model.setCurrentWorkFlowContext(wf.getContext());
+        Logger.gl().d("CHANGEPAGE",wf.getName()+" CONTEXT "+wf.getRawContextKeys());
+        //null context == keep current
+        if (wf.getRawContextKeys() != null) {
+            Log.d("PAGESTACK", "generating new context: "+wf.getRawContextKeys().toString());
+            LiveData<Context> ld = model.generateNewContext(Expressor.evaluate(wf.getRawContextKeys(), mEvalContext));
+            ld.observeForever(context -> {
+                model.setWorkFlowContext(context);
+                _changePage(wf);
+            });
+
+        } else {
+            model.setWorkFlowContext(mEvalContext);
+            _changePage(wf);
+        }
+    }
+
+    private void _changePage(Workflow wf) {
         String template=null;
         try {
             template = wf.getTemplate();
@@ -43,7 +61,6 @@ public class PageStack {
         Log.d("v","Template "+template);
 
         //Check what template is required.
-        //TODO: Remove - make sure correct template used.
         if (wf.hasBlock(Block.GIS)) {
             Log.d("WARNING","Wrong template used - GIS blocks requires GisMapTemplate..substituting");
             template = "GisMapTemplate";
@@ -60,7 +77,10 @@ public class PageStack {
             newP.onCreate(oldP.getFragment());
             newP.reload();
         }
+
     }
+
+
 
 
     public Page getInfocusPage() {

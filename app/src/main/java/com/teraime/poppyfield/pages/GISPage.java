@@ -1,6 +1,4 @@
-package com.teraime.poppyfield.templates;
-
-import static com.teraime.poppyfield.gis.Geomatte.convert;
+package com.teraime.poppyfield.pages;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -27,16 +25,14 @@ import com.google.maps.android.data.geojson.GeoJsonPolygon;
 import com.google.maps.android.data.geojson.GeoJsonPolygonStyle;
 import com.google.maps.android.ui.IconGenerator;
 import com.teraime.poppyfield.base.Block;
+import com.teraime.poppyfield.base.Context;
 import com.teraime.poppyfield.base.Expressor;
+import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -70,15 +66,15 @@ public class GISPage extends Page {
         GeoJsonLayer gl = new GeoJsonLayer(googleMap, geoJsonData);
         fillPolygons(gl,gisBlock);
         gl.addLayerToMap();
+        Log.d("drawLayer","Adding layer "+gisBlock.getAttr("label"));
         gl.setOnFeatureClickListener((GeoJsonLayer.GeoJsonOnFeatureClickListener) feature -> {
             //feature contains all keys under properties.
             //required for lookup.
-            Map<String, String> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            for (String k : feature.getPropertyKeys())
-                props.put(k, feature.getProperty(k));
-            model.setSingleObjectContent(props); //this needs to be known by changepage.
-            Log.d("vagel", feature.getProperties().toString());
-            model.getPageStack().changePage(gisBlock.getAttr("on_click"));
+            String featureCols = feature.getProperty("COLUMNS");
+            String featureVars = feature.getProperty("VARIABLES");
+            Log.d("drawLayer", feature.getProperties().toString());
+            //create a new content for this object and request a page change.
+            model.getPageStack().changePage(gisBlock.getAttr("on_click"),new Context(null,Tools.jsonObjectToMap(featureVars),Tools.jsonObjectToMap(featureCols)));
         });
 
     }
@@ -86,23 +82,27 @@ public class GISPage extends Page {
 
     private void fillPolygons(GeoJsonLayer layer, Block gisblock) {
         Map<String, String> gisBlockAttrs = gisblock.getAttrs();
-        Map<String, String> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         int color = Color.parseColor(gisBlockAttrs.get("color"));
         // Iterate over all the features stored in the layer
         for (GeoJsonFeature feature : layer.getFeatures()) {
-            props.clear();
-            for (String k : feature.getPropertyKeys())
-                props.put(k, feature.getProperty(k));
+            Map<String, String> featureVars = Tools.jsonObjectToMap(feature.getProperty("VARIABLES"));
+            Map<String, String> featureCols = Tools.jsonObjectToMap(feature.getProperty("COLUMNS"));
             // Check if the magnitude property exists
             if (feature.getGeometry() instanceof GeoJsonPolygon) {
                 GeoJsonPolygonStyle ps = new GeoJsonPolygonStyle();
                 ps.setFillColor(color);
                 LatLng x = ((GeoJsonPolygon) feature.getGeometry()).getCoordinates().get(0).get(0);
-                addText(x, feature.getProperty("shape_area"), 1, 12);
+                addText(x, featureVars.get("shape_area"), 1, 12);
                 feature.setPolygonStyle(ps);
             } else if (feature.getGeometry() instanceof GeoJsonPoint) {
                 //Log.d("vagel","PROPS: "+props.toString());
-                String label = gisblock.getLabel(props);
+                String label = Expressor.analyze(gisblock.getLabelExpr(),new Context(null,featureVars,featureCols));
+                if (label!=null && label.startsWith("@")) {
+                    String key = label.substring(1);
+                    if (key.length()>0)
+                        label = featureCols.get(key);
+                }
+                gisblock.getLabelExpr();
                 IconGenerator icg = new IconGenerator(model.getActivity());
                 icg.setStyle(IconGenerator.STYLE_WHITE);
                 Bitmap bmp = icg.makeIcon(label);
@@ -113,7 +113,7 @@ public class GISPage extends Page {
                 GeoJsonLineStringStyle gl = new GeoJsonLineStringStyle();
                 gl.setColor(color);
                 LatLng x = ((GeoJsonLineString) feature.getGeometry()).getCoordinates().get(0);
-                addText(x, feature.getProperty("Shape_Area"), 1, 12);
+                addText(x, feature.getProperty("shape_area"), 1, 12);
                 feature.setLineStringStyle(gl);
             }
         }
@@ -163,7 +163,7 @@ public class GISPage extends Page {
         Block gis = workFlow.getBlock(Block.GIS);
         String source = gis.getAttr("source");
         source = source.split(",")[0];
-        source = Expressor.analyze(Expressor.preCompileExpression(source,null),model.getSingleObjectContext());
+        source = Expressor.analyze(Expressor.preCompileExpression(source),model.getWorkflowContext());
         Log.d("v3","In reload - source: "+source);
         model.updateBoundary(source);
         spawnLayers();

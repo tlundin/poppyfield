@@ -15,9 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Stack;
-import java.util.UUID;
 
 
 /**
@@ -199,7 +197,7 @@ public class Expressor {
         EvalExpr(TokenType t) {
             super(t);
         }
-        abstract Object eval(Map <String,String> myAttrs);
+        abstract Object eval(Context mContext);
     }
 
     static class Text extends EvalExpr {
@@ -209,7 +207,7 @@ public class Expressor {
             this.str=t.str;
         }
         @Override
-        String eval(Map <String,String> myAttrs) {
+        String eval(Context mContext) {
             return str;
         }
         @NonNull
@@ -510,10 +508,9 @@ public class Expressor {
         List<Token> curr;
         int depth = 0;
         Map <String,String> myAttrs;
-        StreamAnalyzer(List<Token> tokens, Map <String,String> mAttrs) {
+        StreamAnalyzer(List<Token> tokens) {
             mIterator = tokens.iterator();
             curr=null;
-            myAttrs = mAttrs;
         }
         boolean hasNext() {
             return mIterator.hasNext();
@@ -534,7 +531,7 @@ public class Expressor {
                     if (curr!=null && !curr.isEmpty()) {
                         //Log.d("franco","CURR tokens: ");
                         //printTokens(curr);
-                        EvalExpr ret = analyzeExpression(curr,myAttrs);
+                        EvalExpr ret = analyzeExpression(curr);
                         if (ret==null)
                             System.err.println("Eval of expression "+curr.toString()+" failed");
                         curr = new ArrayList<>();
@@ -565,10 +562,8 @@ public class Expressor {
     static private class ExpressionAnalyzer {
         //stream to use
         private final Iterator<Token>it;
-        Map <String,String> myAttrs;
-        ExpressionAnalyzer(Iterator<Token> iterator, Map <String,String> mAttrs) {
+        ExpressionAnalyzer(Iterator<Token> iterator) {
             it = iterator;
-            myAttrs=mAttrs;
         }
 
 
@@ -592,7 +587,7 @@ public class Expressor {
                     case number:
                     case literal:
                     case comma:
-                        return new Atom(t,myAttrs);
+                        return new Atom(t);
                     case operand:
                         return new Operand(t);
                     case text:
@@ -601,7 +596,7 @@ public class Expressor {
                 }
                 TokenType p = type.parent;
                 if (isFunction(type)) {
-                    return new Function(type, it,myAttrs);
+                    return new Function(type, it);
                 }
             }
 
@@ -643,11 +638,10 @@ public class Expressor {
 
     public static class Atom extends EvalExpr {
         final Token myToken;
-        Map <String,String> myAttrs;
-        Atom(Token t,Map <String,String> mAttrs) {
+
+        Atom(Token t) {
             super (t.type);
             myToken = t;
-            myAttrs=mAttrs;
         }
         @Override
         public String toString() {
@@ -661,16 +655,16 @@ public class Expressor {
             return (getType()==TokenType.variable);
         }
 
-        public Object eval(Map <String,String> myAttrs) {
+        public Object eval(Context mContext) {
             //Log.d("vortex","In eval for Atom type "+type);
 
             switch(getType()) {
                 case variable:
-                    String value = myAttrs.get(myToken.str);
+                    String value = mContext.getVariableValues().get(myToken.str);
 
                     if (value==null ) {
                         Log.d("EXPR","Variable '"+this.toString()+"' does not have a value or Variable is missing.");
-                        Log.d("EXPR","Attributes: "+myAttrs.toString()+" this "+this.toString());
+                        Log.d("EXPR","Attributes: "+mContext.getVariableValues().toString()+" this "+this.toString());
                         return null;
                     }
 
@@ -748,21 +742,21 @@ public class Expressor {
             return String.format("%s(%s,%s)", operator.toString(), arg1s, arg2s);
         }
 
-        public Object eval(Map <String,String> myAttrs)  {
+        public Object eval(Context mContext)  {
             //Log.d("vortex","In eval for convo");
-            Object arg1v = arg1.eval(myAttrs);
+            Object arg1v = arg1.eval(mContext);
 
 
             if (arg1v==null) {
                 String opS =operator.myToken.str;
                 if (opS!=null) {
                     TokenType op = TokenType.valueOfIgnoreCase(opS);
-                    if (op != null && op.equals(TokenType.or)) return arg2.eval(myAttrs);
+                    if (op != null && op.equals(TokenType.or)) return arg2.eval(mContext);
                 }
                 return null;
             }
 
-            Object arg2v = arg2.eval(myAttrs);
+            Object arg2v = arg2.eval(mContext);
 
             Log.e("vortex",(arg1v.toString())+ " " + operator.myToken.str+" "+((arg2v==null)?"null":arg2v.toString()));
             if (arg2v==null) {
@@ -974,7 +968,7 @@ public class Expressor {
 
         private final List<EvalExpr> args = new ArrayList<>();
 
-        Function(TokenType type, Iterator<Token> it, Map <String,String> myAttrs) {
+        Function(TokenType type, Iterator<Token> it) {
             super(type);
             //iterator reaches end?
             int depth=0;
@@ -1041,7 +1035,7 @@ public class Expressor {
                 //printTokens(arg);
                 EvalExpr analyzedArg;
 //				try {
-                analyzedArg = analyzeExpression(arg,myAttrs);
+                analyzedArg = analyzeExpression(arg);
                 if (analyzedArg != null) {
                     args.add(analyzedArg);
                 } else {
@@ -1059,7 +1053,7 @@ public class Expressor {
         }
 
         @Override
-        public Object eval(Map <String,String> myAttrs) {
+        public Object eval(Context mContext) {
             WorldViewModel mWorld = WorldViewModel.getStaticWorldRef();
             //Log.d("vortex","Function eval: "+getType());
 
@@ -1068,7 +1062,7 @@ public class Expressor {
             int j=0;
             double arg1F=0,arg2F=0;
             for (EvalExpr arg:args) {
-                result = arg.eval(myAttrs);
+                result = arg.eval(mContext);
                 evalArgs.add(result);
                 if (j==0) {
                     if (result instanceof Integer)
@@ -1239,7 +1233,7 @@ public class Expressor {
                         }
                         */
 
-                        return myAttrs.get((String) evalArgs.get(0));
+                        return mContext.getColumnValues().get((String) evalArgs.get(0));
                     }
                     break;
                 case getUserName:
@@ -1404,7 +1398,7 @@ public class Expressor {
     }
 
 
-    private static EvalExpr analyzeExpression(List<Token> tokens, Map<String,String> myAttrs) {
+    private static EvalExpr analyzeExpression(List<Token> tokens) {
         boolean err = false;
         // Operation stack.
         Stack<Expr> opStack = new Stack<>();
@@ -1415,7 +1409,7 @@ public class Expressor {
         if (tokens == null || tokens.isEmpty())
             return null;
 
-        ExpressionAnalyzer ef = new ExpressionAnalyzer(tokens.iterator(),myAttrs);
+        ExpressionAnalyzer ef = new ExpressionAnalyzer(tokens.iterator());
 
         Expr e = null, top;
         //System.out.println("Before:  " + tokens);
@@ -1495,7 +1489,7 @@ public class Expressor {
         return valStack.isEmpty()?null:(EvalExpr) valStack.pop();
     }
 
-    public static String analyze(List<EvalExpr> expressions,Map <String,String> myAttrs) {
+    public static String analyze(List<EvalExpr> expressions,Context mContext) {
         if (expressions == null) {
             Logger.gl().e("Expression was null in Analyze. This is likely due to a syntax error in the original formula");
             return null;
@@ -1507,7 +1501,7 @@ public class Expressor {
             //tret=null;
             Object rez;
             //System.out.println("Analyze: "+expr.toString());
-            rez = expr.eval(myAttrs);
+            rez = expr.eval(mContext);
             if (rez!=null) {
                 //System.out.println("Part Result "+rez.toString());
                 endResult.append(rez);
@@ -1523,13 +1517,9 @@ public class Expressor {
             return endResult.toString();
     }
 
-    //No Context
-    public static List<EvalExpr> preCompileExpression(String expression) {
-        return preCompileExpression(expression,null);
-    }
 
     //Context
-    public static List<EvalExpr> preCompileExpression(String expression,Map <String,String> myAttrs) {
+    public static List<EvalExpr> preCompileExpression(String expression) {
         if (expression==null) {
             //Log.e("vortex","Precompile expression returns immediately on null string input");
             return null;
@@ -1540,7 +1530,7 @@ public class Expressor {
         //printTokens(result);
         List<EvalExpr> endResult = new ArrayList<>();
         if (result!=null && testTokens(result)) {
-            StreamAnalyzer streamAnalyzer = new StreamAnalyzer(result,myAttrs);
+            StreamAnalyzer streamAnalyzer = new StreamAnalyzer(result);
             while (streamAnalyzer.hasNext()) {
 
                 EvalExpr rez=null;
@@ -1583,18 +1573,18 @@ public class Expressor {
         }
     }
 
-    public static Map<String,String> evaluate(List<Expressor.EvalExpr> eContext,Map<String,String> evalContext) {
-        if(eContext == null)
+    public static Map<String,String> evaluate(List<Expressor.EvalExpr> rawContextKeys,Context mContext) {
+        if(rawContextKeys == null)
             return null;
-        Log.d("EXPR", "in evaluate with context "+(evalContext==null?"null":evalContext.toString()));
         String err = null;
         Map<String, String> keyHash = null;
         boolean  hasWildCard = false;
         Logger o = Logger.gl();
         keyHash = new HashMap<String, String>();
-        String cContext = analyze(eContext,evalContext);
+        Log.d("EXPR","in evaluate with "+mContext);
+        String cContext = analyze(rawContextKeys,mContext);
         if (cContext==null) {
-            err = "Context syntax error when evaluating precompiled context: "+eContext.toString();
+            err = "Context syntax error when evaluating precompiled context: "+rawContextKeys.toString();
 
         } else {
             String[] pairs = cContext.split(",");
@@ -1609,7 +1599,7 @@ public class Expressor {
                         String[] kv = pair.split("=");
 
                         if (kv == null || kv.length < 2) {
-                            err = "Context " + eContext + " cannot be evaluated, likely due to a missing variable value. Evaluation: " + cContext;
+                            err = "Context " + rawContextKeys + " cannot be evaluated, likely due to a missing variable value. Evaluation: " + cContext;
                             break;
                         } else {
                             String arg = kv[0].trim();
@@ -1644,10 +1634,10 @@ public class Expressor {
             o.e(err);
             return null;
         } else {
-            Log.d("EXPR","evaluate returns: "+keyHash+ " for "+eContext+" isPartial "+hasWildCard);
+            Log.d("EXPR","evaluate returns: "+keyHash+ " for "+rawContextKeys+" isPartial "+hasWildCard);
             //if (hasWildCard) {
             //keyHash=GlobalState.getInstance().getDb().createNotNullSelection(keyHash);
-            //Log.d("vortex","DB_CONTEXT ACTUALLY returns: "+keyHash+ " for "+eContext+" isPartial "+hasWildCard);
+            //Log.d("vortex","DB_CONTEXT ACTUALLY returns: "+keyHash+ " for "+rawContextKeys+" isPartial "+hasWildCard);
             //}
             return keyHash;
         }

@@ -172,9 +172,5 @@ public class VariableTable {
     }
 
 
-    public String getCol(String colName) {
-        List<String> vals = new ArrayList<String>(Arrays.asList(L1,L2,L3,L4,L5,L6,L7,L8,L9,L10));
-        int colIndex = Integer.parseInt(colName.replace("L",""));
-        return vals.get(colIndex-1);
-    }
+
 }

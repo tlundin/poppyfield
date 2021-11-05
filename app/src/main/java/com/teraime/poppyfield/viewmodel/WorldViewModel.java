@@ -1,13 +1,12 @@
 package com.teraime.poppyfield.viewmodel;
 
 import android.app.Application;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Pair;
 
-import androidx.core.view.GravityCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -18,6 +17,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.teraime.poppyfield.base.Block;
+import com.teraime.poppyfield.base.Context;
 import com.teraime.poppyfield.base.DBHelper;
 import com.teraime.poppyfield.base.Expressor;
 import com.teraime.poppyfield.base.GeoJsonGenerator;
@@ -25,9 +25,9 @@ import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
 import com.teraime.poppyfield.base.Table;
+import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.base.ValueProps;
 import com.teraime.poppyfield.base.Variable;
-import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.loader.Configurations.Config;
 import com.teraime.poppyfield.loader.Configurations.GisType;
@@ -35,20 +35,16 @@ import com.teraime.poppyfield.loader.Configurations.WorkflowBundle;
 import com.teraime.poppyfield.loader.Loader;
 import com.teraime.poppyfield.room.FieldPadRepository;
 import com.teraime.poppyfield.room.VariableTable;
-import com.teraime.poppyfield.templates.LoadFragment;
-import com.teraime.poppyfield.templates.Page;
 
 import org.json.JSONObject;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class WorldViewModel extends AndroidViewModel {
     private static WorldViewModel mStaticWorld;
@@ -57,8 +53,6 @@ public class WorldViewModel extends AndroidViewModel {
     private final MutableLiveData<String> loadState;
     private final String cachePath;
     private final ExecutorService mExecutorService;
-    private List<String> mManifest;
-    private final LiveData<List<VariableTable>> mVariables;
     private final String app;
     private GoogleMap mMap;
     private final Application mActivity;
@@ -69,7 +63,7 @@ public class WorldViewModel extends AndroidViewModel {
     private boolean appEntry = true;
     private SharedPreferences mAppPrefs,globalPrefs;
     private DBHelper mDBHelper;
-    private Map<String,String> mWorkFlowContext,mCurrentGisLayerContext;
+    private Context mWorkFlowContext;
     private Map<String, String> mEvalProps;
     private static final int DEFAULT_THREAD_POOL_SIZE = 10;
     private GisObject mTouchedGeoObject;
@@ -78,31 +72,27 @@ public class WorldViewModel extends AndroidViewModel {
         super(application);
         globalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
         this.app=globalPrefs.getString("App","poppyfield");
-        mAppPrefs = application.getSharedPreferences(app, Context.MODE_PRIVATE);
+        mAppPrefs = application.getSharedPreferences(app, android.content.Context.MODE_PRIVATE);
         mExecutorService = Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
         mRepository = new FieldPadRepository(application,mExecutorService);
-        mVariables = mRepository.getTimeOrderedList();
         mLoader = new Loader();
         mPageStack = new PageStack(this);
         myConf = new MutableLiveData<>(mLoader.getConfigs());
         loadState = new MutableLiveData<>();
         cachePath = application.getFilesDir().getPath();
         mActivity=application;
-        mWorkFlowContext = new HashMap<>();
-        mCurrentGisLayerContext = new HashMap<>();
+        mWorkFlowContext = null;
         mStaticWorld = this;
     }
 
     public String getApp() { return app; }
-    public List<String> getManifest(){ return mManifest; }
     public ExecutorService getExecutor() { return mExecutorService; }
 
     //Livedata
-    public LiveData<List<VariableTable>> getAllVariables() { return mVariables; }
     public LiveData<List<Config<?>>> getMyConf() { return myConf; }
     public LiveData<LatLngBounds> getMapBoundary() { return mRepository.getBoundary();}
-    public LiveData<String> getLoadState() { return (LiveData<String>) loadState; }
-    public LiveData<Pair> getGeoJsonLD() { return (LiveData<Pair>)mRepository.getJsonObjLD();}
+    public LiveData<String> getLoadState() { return loadState; }
+    public LiveData<Pair> getGeoJsonLD() { return mRepository.getJsonObjLD();}
     public WorkflowBundle getWorkFlowBundle() { return mLoader.getBundle(); }
 
     //DB functions
@@ -170,20 +160,15 @@ public class WorldViewModel extends AndroidViewModel {
 
     public LiveData<JSONObject> queryGisObjects(Map<String, String> keyMap) {
         Log.d("GLERP", keyMap.toString());
-        MutableLiveData<String> mLoadCounter = new MutableLiveData<>();
         MutableLiveData<JSONObject> donePing = new MutableLiveData<>();
-        final Map<String,List<VariableTable>> result = Collections.synchronizedMap(new HashMap<>());
-        androidx.lifecycle.Observer<String> mObserver = load -> {
-            Log.d("GIS","Recieved "+load+". Result has "+result.size());
-            if (result.size() == GisConstants.gisVariables.size()) {
-                Log.d("GIS","got all - generating json");
-                JSONObject jeo = GeoJsonGenerator.print(result,mDBHelper.getColTranslator());
-                donePing.setValue(jeo);
-            }
-
+        LiveData<List<VariableTable>> mLoadCounter = mRepository.queryGisObjects(keyMap, mDBHelper.getColTranslator());
+        Observer<List<VariableTable>> mObserver = load -> {
+            Log.d("GIS","Recieved "+load+". Result has "+load.size());
+            JSONObject jeo = load.size()>0?GeoJsonGenerator.print(load,mDBHelper.getColTranslator()):null;
+            donePing.setValue(jeo);
         };
         mLoadCounter.observeForever(mObserver);
-        mRepository.queryGisObjects(keyMap,mDBHelper.getColTranslator(),mLoadCounter,result);
+
         return donePing;
     };
 
@@ -197,43 +182,7 @@ public class WorldViewModel extends AndroidViewModel {
             return new Variable(mLoader.getTable().getVariableExtraFields(varName), new ValueProps().setValue(mEvalProps.get(varName)));
         }
         return null;
-        //StringBuilder queryBase = mRepository.buildQueryBaseFromMap(mWorkFlowContext,mDBHelper.getColTranslator());
-        //String queryString = queryBase.append("var").append("=").append(varName).toString();
-        //return new Variable(mLoader.getTable().getVariableExtraFields(varName),mRepository.latestMatchVariable(queryString).toMap());
     }
-
-    //A context associated with a specific workflow.
-    public void setCurrentWorkFlowContext(List<Expressor.EvalExpr> context) {
-        mWorkFlowContext = Expressor.evaluate(context,getSingleObjectContext());
-        Log.d("vagel","WF context set to "+mWorkFlowContext);
-    }
-    //A context associated with a gislayer.
-    public Map<String, String> setCurrentGisLayerContext(List<Expressor.EvalExpr> context) {
-        //TODO: This doesn't make sense
-        mCurrentGisLayerContext = Expressor.evaluate(context,getWorkflowContext());
-        if (mWorkFlowContext == null) {
-            Log.d("vagel","MergedGisClontext DB1 "+mCurrentGisLayerContext);
-            return mCurrentGisLayerContext;
-        }
-        Map<String, String> wfContext = new HashMap<>(mWorkFlowContext);
-        if (mCurrentGisLayerContext == null) {
-            mCurrentGisLayerContext = wfContext;
-        } else {
-            wfContext.forEach((key, value) -> mCurrentGisLayerContext.merge(key, value, (v1, v2) -> v1.equalsIgnoreCase(v2) ? v1 : v1));
-        }
-        Log.d("vagel","MergedGisClontext DB2 "+mCurrentGisLayerContext);
-        return mCurrentGisLayerContext;
-    }
-
-    public void setSingleObjectContent(Map<String, String> properties) {
-
-        mEvalProps = properties;
-        if (mEvalProps !=null)
-        Log.d("vagel","single obj props now "+mEvalProps.toString());
-        else
-            Log.d("vagel","sing obj props null");
-    }
-
 
 
     public SharedPreferences getAppPrefs() {
@@ -244,21 +193,8 @@ public class WorldViewModel extends AndroidViewModel {
         return globalPrefs;
     }
 
-    public void addKeyToContext(String key, String value) {
-        String dbKey = mDBHelper.getColTranslator().ToDB(key);
-        if (dbKey == null) {
-            Logger.gl().e("Key Error in AddKey for key "+key);
-            return;
-        }
-        mWorkFlowContext.put(dbKey,value);
-    }
-    public Map<String, String> getWorkflowContext() {
+    public Context getWorkflowContext() {
         return mWorkFlowContext;
-    }
-
-
-    public Map<String, String> getSingleObjectContext() {
-        return mEvalProps;
     }
 
     public void setLoadState(String state) {
@@ -267,25 +203,16 @@ public class WorldViewModel extends AndroidViewModel {
 
     public void generateLayer(Block gisBlock) {
         String object_context = gisBlock.getAttr("obj_context");
-        Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),getSingleObjectContext());
-        Map<String, String> wfContext = getWorkflowContext();
-        //combine the context
-        if (wfContext != null) {
-            for (String key:wfContext.keySet()) {
-                gisLayerContext.put(key,wfContext.get(key));
-            }
-        }
+        Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),getWorkflowContext());
         Log.d("layer","layer context is now "+gisLayerContext.toString());
         LiveData<JSONObject> geoLiveD = queryGisObjects(gisLayerContext);
         final Observer<JSONObject> mObserver = jsonObj -> {
             if (jsonObj == null)
                 Log.d("generateLayer","Skipping layergen for "+gisBlock.getAttrs().get("label"));
             else
-                mRepository.generateLayer(gisBlock,getCacheFolder(),gisLayerContext,jsonObj);
+                mRepository.generateLayer(gisBlock,gisLayerContext,jsonObj);
         };
         geoLiveD.observeForever(mObserver);
-
-
     }
 
 
@@ -318,6 +245,37 @@ public class WorldViewModel extends AndroidViewModel {
 
     public void setSelectedGop(GisObject selected) {
         mTouchedGeoObject = selected;
+    }
+
+    public LiveData<Context> generateNewContext(Map<String,String> mKeyValues) {
+        MutableLiveData<Context> ret = new MutableLiveData<Context>();
+        final AtomicInteger loadC = new AtomicInteger(0);
+        LiveData<List<VariableTable>> globs = mRepository.getGlobalVariables();
+        LiveData<List<VariableTable>> vars = mRepository.getWorkflowVariables(mKeyValues,mDBHelper.getColTranslator());
+        final Map<String, String> vMap = new HashMap<>();
+        final Map<String, String> cMap = new HashMap<>();
+        final Map<String, String> globMap = new HashMap<>();
+        globs.observeForever(globTables -> {
+            Log.d("GLOB","GLOB!");
+            globMap.putAll(Tools.extractValues(globTables));
+            if (loadC.incrementAndGet() > 1)
+                ret.postValue(new Context(vMap,globMap,cMap));
+        });
+
+        vars.observeForever(varTables -> {
+            if (varTables !=null && !varTables.isEmpty()) {
+                vMap.putAll(Tools.extractValues(varTables));
+                cMap.putAll(Tools.extractColumns(varTables.get(0)));
+            }
+            if (loadC.incrementAndGet() > 1)
+                ret.postValue(new Context(vMap,globMap,cMap));
+        });
+        return ret;
+    }
+
+
+    public void setWorkFlowContext(Context context) {
+        mWorkFlowContext = context;
     }
 }
 

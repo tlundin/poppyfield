@@ -1,7 +1,5 @@
 package com.teraime.poppyfield.templates;
 
-import static com.teraime.poppyfield.gis.Geomatte.convert;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
@@ -24,21 +22,14 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.maps.android.data.geojson.GeoJsonLayer;
 import com.teraime.poppyfield.R;
 import com.teraime.poppyfield.base.Block;
+import com.teraime.poppyfield.pages.GISPage;
 
-import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.nio.file.Paths;
-import java.util.List;
 
 public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallback {
 
@@ -65,10 +56,12 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         LiveData<Pair> layerL = model.getGeoJsonLD();
         Observer<? super LatLngBounds> boundsObserver = (Observer<LatLngBounds>) latLngBounds -> {
             //getmImgOverlay
-            model.getMap().addGroundOverlay(new GroundOverlayOptions()
-            .positionFromBounds(latLngBounds)
-            .image(model.getmImgOverlay()));
-            model.getMap().moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 0));
+            if (latLngBounds != null) {
+                model.getMap().addGroundOverlay(new GroundOverlayOptions()
+                        .positionFromBounds(latLngBounds)
+                        .image(model.getmImgOverlay()));
+                model.getMap().moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 0));
+            }
             model.setLoadState("DONE");
         };
         Observer<String> loadObserver = new Observer<String>() {

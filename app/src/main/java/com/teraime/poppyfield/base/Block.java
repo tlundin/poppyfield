@@ -1,8 +1,5 @@
 package com.teraime.poppyfield.base;
 
-import android.util.Log;
-
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,19 +34,10 @@ public class Block {
     public String getBlockId() {
         return id;
     }
-    public String getLabel(Map <String,String> props) {
-        if (eLabel == null) {
-            Log.e("vagel", "elabel is null");
-            return null;
-        }
-        String label = Expressor.analyze(eLabel,props);
-        if (label!=null && label.startsWith("@")) {
-            String key = label.substring(1, label.length());
-            if (key.length()>0)
-                label = props.get(key);
-        }
-        return label;
+    public List<Expressor.EvalExpr> getLabelExpr() {
+        return eLabel;
     }
+
 
 
 }

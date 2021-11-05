@@ -57,7 +57,7 @@ public class Loader {
     public void load(String app, WorldViewModel v) {
         mWorld = v;mApp = app;
                 ////////////////
-                loadManifest();
+                //loadManifest();
                 loadWorkFlows();
                 loadSpinners();
                 loadTableData();

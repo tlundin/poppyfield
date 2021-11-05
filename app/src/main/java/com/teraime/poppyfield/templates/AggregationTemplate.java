@@ -9,8 +9,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.teraime.poppyfield.R;
+import com.teraime.poppyfield.pages.Page;
 
-public class PageWithAggregationTemplate extends TemplateFragment {
+public class AggregationTemplate extends TemplateFragment {
     Page mPage = null;
     @Nullable
     @Override
