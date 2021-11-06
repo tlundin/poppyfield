@@ -29,29 +29,33 @@ public class PageStack {
         mEvent = EventTypes.NONE;
     }
     public void changePage(String target) {
-        changePage(target, model.getWorkflowContext());
+        changePage(target, null);
     }
 
     public void changePage(String target,Context mEvalContext) {
         Log.d("PAGESTACK",target);
+        if (mEvalContext == null) {
+            Log.d("PAGESTACK","reusing previous context");
+            //If there was a precious page use its context.
+            if (getInfocusPage()!=null)
+                mEvalContext = getInfocusPage().getWorkflowContext();
+        }
         Workflow wf = model.getWorkFlowBundle().getWf(target);
         Logger.gl().d("CHANGEPAGE",wf.getName()+" CONTEXT "+wf.getRawContextKeys());
         //null context == keep current
         if (wf.getRawContextKeys() != null) {
             Log.d("PAGESTACK", "generating new context: "+wf.getRawContextKeys().toString());
-            LiveData<Context> ld = model.generateNewContext(Expressor.evaluate(wf.getRawContextKeys(), mEvalContext));
+            LiveData<Context> ld = model.generateNewContext(Expressor.evaluate(wf.getRawContextKeys(),mEvalContext));
             ld.observeForever(context -> {
-                model.setWorkFlowContext(context);
-                _changePage(wf);
+                _changePage(wf,context);
             });
 
         } else {
-            model.setWorkFlowContext(mEvalContext);
-            _changePage(wf);
+            _changePage(wf,mEvalContext);
         }
     }
 
-    private void _changePage(Workflow wf) {
+    private void _changePage(Workflow wf, Context context) {
         String template=null;
         try {
             template = wf.getTemplate();
@@ -66,6 +70,7 @@ public class PageStack {
             template = "GisMapTemplate";
         }
         Page newP = Tools.createPage(model,template,wf);
+        newP.setWorkFlowContext(context);
         Page oldP = getInfocusPage();
         mStack.add(newP);
         if (oldP == null || !template.equals(oldP.getTemplateType())) {

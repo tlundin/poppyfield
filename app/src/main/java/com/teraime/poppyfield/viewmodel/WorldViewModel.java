@@ -63,7 +63,7 @@ public class WorldViewModel extends AndroidViewModel {
     private boolean appEntry = true;
     private SharedPreferences mAppPrefs,globalPrefs;
     private DBHelper mDBHelper;
-    private Context mWorkFlowContext;
+
     private Map<String, String> mEvalProps;
     private static final int DEFAULT_THREAD_POOL_SIZE = 10;
     private GisObject mTouchedGeoObject;
@@ -81,7 +81,6 @@ public class WorldViewModel extends AndroidViewModel {
         loadState = new MutableLiveData<>();
         cachePath = application.getFilesDir().getPath();
         mActivity=application;
-        mWorkFlowContext = null;
         mStaticWorld = this;
     }
 
@@ -101,7 +100,7 @@ public class WorldViewModel extends AndroidViewModel {
     }
     public void deleteGisObjects(List<String> gisToDelete) { if (gisToDelete==null) deleteAllGisObjects(); else mRepository.deleteSomeHistorical(gisToDelete,mDBHelper.getColTranslator());}
     public void insert(VariableTable variable) { mRepository.insert(variable); }
-    public void updateBoundary(String metaSource) {
+    public void getBoundaryFromImage(String metaSource) {
                 mRepository.updateBoundary(app, metaSource);
     }
 
@@ -193,17 +192,17 @@ public class WorldViewModel extends AndroidViewModel {
         return globalPrefs;
     }
 
-    public Context getWorkflowContext() {
-        return mWorkFlowContext;
-    }
+
 
     public void setLoadState(String state) {
         loadState.setValue(state);
     }
 
-    public void generateLayer(Block gisBlock) {
+    public void generateLayer(Block gisBlock, Context context) {
         String object_context = gisBlock.getAttr("obj_context");
-        Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),getWorkflowContext());
+        Log.d("obx_context","obj_context for "+gisBlock.getLabelExpr()+" is "+object_context);
+        Log.d("obx_context","wf context for "+gisBlock.getLabelExpr()+" is "+((context==null)?"null":context.toString()));
+        Map<String, String> gisLayerContext = Expressor.evaluate(Expressor.preCompileExpression(object_context),context);
         Log.d("layer","layer context is now "+gisLayerContext.toString());
         LiveData<JSONObject> geoLiveD = queryGisObjects(gisLayerContext);
         final Observer<JSONObject> mObserver = jsonObj -> {
@@ -274,8 +273,9 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
 
-    public void setWorkFlowContext(Context context) {
-        mWorkFlowContext = context;
-    }
+
+
+    public void setBoundaryFromCoordinates(LatLngBounds latLngBounds) { mRepository.setBoundary(latLngBounds); }
+
 }
 

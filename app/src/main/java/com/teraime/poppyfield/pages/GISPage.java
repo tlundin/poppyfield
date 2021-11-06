@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.data.geojson.GeoJsonFeature;
@@ -29,13 +30,14 @@ import com.teraime.poppyfield.base.Context;
 import com.teraime.poppyfield.base.Expressor;
 import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.base.Workflow;
+import com.teraime.poppyfield.gis.Geomatte;
+import com.teraime.poppyfield.gis.PhotoMeta;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import org.json.JSONObject;
 
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 public class GISPage extends Page {
 
@@ -56,7 +58,7 @@ public class GISPage extends Page {
         //List<Block> layers = workFlow.getBlocksOfType(Block.GIS_LAYER);
         List<Block> gisBlocks = workFlow.getBlocksOfType(Block.GIS_POINTS);
         for (Block gisBlock : gisBlocks) {
-            model.generateLayer(gisBlock);
+            model.generateLayer(gisBlock,mWorkFlowContext);
         }
     }
 
@@ -80,14 +82,15 @@ public class GISPage extends Page {
     }
 
 
-    private void fillPolygons(GeoJsonLayer layer, Block gisblock) {
-        Map<String, String> gisBlockAttrs = gisblock.getAttrs();
+    private void fillPolygons(GeoJsonLayer layer, Block gisBlock) {
+        Map<String, String> gisBlockAttrs = gisBlock.getAttrs();
         int color = Color.parseColor(gisBlockAttrs.get("color"));
         // Iterate over all the features stored in the layer
         for (GeoJsonFeature feature : layer.getFeatures()) {
             Map<String, String> featureVars = Tools.jsonObjectToMap(feature.getProperty("VARIABLES"));
             Map<String, String> featureCols = Tools.jsonObjectToMap(feature.getProperty("COLUMNS"));
-            // Check if the magnitude property exists
+            assert featureVars!=null;
+            assert featureCols!=null;
             if (feature.getGeometry() instanceof GeoJsonPolygon) {
                 GeoJsonPolygonStyle ps = new GeoJsonPolygonStyle();
                 ps.setFillColor(color);
@@ -96,13 +99,12 @@ public class GISPage extends Page {
                 feature.setPolygonStyle(ps);
             } else if (feature.getGeometry() instanceof GeoJsonPoint) {
                 //Log.d("vagel","PROPS: "+props.toString());
-                String label = Expressor.analyze(gisblock.getLabelExpr(),new Context(null,featureVars,featureCols));
+                String label = Expressor.analyze(gisBlock.getLabelExpr(),new Context(null,featureVars,featureCols));
                 if (label!=null && label.startsWith("@")) {
                     String key = label.substring(1);
                     if (key.length()>0)
                         label = featureCols.get(key);
                 }
-                gisblock.getLabelExpr();
                 IconGenerator icg = new IconGenerator(model.getActivity());
                 icg.setStyle(IconGenerator.STYLE_WHITE);
                 Bitmap bmp = icg.makeIcon(label);
@@ -124,7 +126,7 @@ public class GISPage extends Page {
 
         if (model.getActivity() == null || model.getMap() == null || location == null || text == null
                 || fontSize <= 0) {
-            return marker;
+            return null;
         }
 
         final TextView textView = new TextView(model.getActivity());
@@ -157,15 +159,39 @@ public class GISPage extends Page {
         return marker;
     }
 
+
+
     @Override
     public void reload() {
         model.setLoadState("LOADING");
-        Block gis = workFlow.getBlock(Block.GIS);
-        String source = gis.getAttr("source");
-        source = source.split(",")[0];
-        source = Expressor.analyze(Expressor.preCompileExpression(source),model.getWorkflowContext());
-        Log.d("v3","In reload - source: "+source);
-        model.updateBoundary(source);
+        determineBoundary();
         spawnLayers();
     };
+
+
+
+
+    private void determineBoundary() {
+        Block gis = workFlow.getBlock(Block.GIS);
+        String topNorth =    gis.getAttr("TopN");
+        String topEast =     gis.getAttr("TopE");
+        String bottomNorth = gis.getAttr("BottomN");
+        String bottomEast =  gis.getAttr("BottomE");
+        PhotoMeta p = new PhotoMeta(topNorth,bottomEast, bottomNorth,topEast );
+        if (p.isValid()) {
+            Log.d("GISPage", p.toString());
+            LatLng NE = Geomatte.convertToLatLong(p.E, p.N);
+            LatLng SW = Geomatte.convertToLatLong(p.W, p.S);
+            LatLngBounds latLngBounds = new LatLngBounds(SW, NE);
+            model.setBoundaryFromCoordinates(latLngBounds);
+        } else {
+            String source = gis.getAttr("source");
+            if (source != null) {
+                source = source.split(",")[0];
+                source = Expressor.analyze(Expressor.preCompileExpression(source), mWorkFlowContext);
+                Log.d("v3", "In reload - source: " + source);
+                model.getBoundaryFromImage(source);
+            }
+        }
+    }
 }

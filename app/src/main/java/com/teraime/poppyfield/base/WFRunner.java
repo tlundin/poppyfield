@@ -26,7 +26,7 @@ public class WFRunner {
             switch (b.getBlockType()) {
                 case "block_set_value":
                     String varTarget = b.getAttr("target");
-                    String eval = Expressor.analyze(Expressor.preCompileExpression(b.getAttr("expression")),mWorld.getWorkflowContext());
+                    //String eval = Expressor.analyze(Expressor.preCompileExpression(b.getAttr("expression")),mWorld.getWorkflowContext());
                     break;
                 case "block_add_gis_image_view":
                 case "block_add_gis_layer":

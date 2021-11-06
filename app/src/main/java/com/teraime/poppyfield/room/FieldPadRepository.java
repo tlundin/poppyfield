@@ -49,7 +49,6 @@ public class FieldPadRepository {
     //private final LiveData<List<VariableTable>> allVars;
     private final MutableLiveData<LatLngBounds> mBoundaries;
     private final MutableLiveData<Pair> jsonObjLD;
-    private final Map<Fragment, LatLngBounds> boundaryMap;
     private final LiveData<List<VariableTable>> mGlobalsLD;
     private BitmapDescriptor mImgOverlay;
     private final File cacheFolder;
@@ -65,7 +64,6 @@ public class FieldPadRepository {
         mVDao = db.variableDao();
         //allVars = mVDao.getTimeOrderedList();
         mBoundaries = new MutableLiveData<>();
-        boundaryMap = new HashMap<>();
         cacheFolder = new File(application.getFilesDir(), "cache");
         this.executorService = executorService;
         jsonObjLD   = new MutableLiveData<>();
@@ -342,5 +340,7 @@ public class FieldPadRepository {
     }
 
 
-
+    public void setBoundary(LatLngBounds latLngBounds) {
+        mBoundaries.setValue(latLngBounds);
+    }
 }

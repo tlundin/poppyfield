@@ -4,6 +4,7 @@ import android.util.Log;
 
 import androidx.fragment.app.Fragment;
 
+import com.teraime.poppyfield.base.Context;
 import com.teraime.poppyfield.base.WFRunner;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
@@ -14,6 +15,7 @@ public class Page {
     final String mTemplateType, mName;
     final protected WorldViewModel model;
     final protected Workflow workFlow;
+    protected Context mWorkFlowContext;
 
     public Page(WorldViewModel model, String template, Workflow wf) {
         mTemplateType = template;
@@ -48,4 +50,13 @@ public class Page {
 
 
     public void reload() {};
+
+    public void setWorkFlowContext(Context context) {
+        Log.d("obx_context","Setting context to: "+((context == null)?"NULL":context.toString()));
+        mWorkFlowContext = context;
+    }
+    public Context getWorkflowContext() {
+        return mWorkFlowContext;
+    }
+
 }

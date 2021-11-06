@@ -57,9 +57,10 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         Observer<? super LatLngBounds> boundsObserver = (Observer<LatLngBounds>) latLngBounds -> {
             //getmImgOverlay
             if (latLngBounds != null) {
-                model.getMap().addGroundOverlay(new GroundOverlayOptions()
-                        .positionFromBounds(latLngBounds)
-                        .image(model.getmImgOverlay()));
+                if (model.getmImgOverlay() != null)
+                    model.getMap().addGroundOverlay(new GroundOverlayOptions()
+                            .positionFromBounds(latLngBounds)
+                            .image(model.getmImgOverlay()));
                 model.getMap().moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 0));
             }
             model.setLoadState("DONE");
@@ -100,11 +101,6 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         mPage.onMapReady();
         showUserIfAllowed(googleMap);
     }
-
-
-
-
-
 
 
     private void showUserIfAllowed(GoogleMap googleMap) {
