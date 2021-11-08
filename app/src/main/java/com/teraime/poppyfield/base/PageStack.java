@@ -41,7 +41,7 @@ public class PageStack {
                 mEvalContext = getInfocusPage().getWorkflowContext();
         }
         Workflow wf = model.getWorkFlowBundle().getWf(target);
-        Logger.gl().d("CHANGEPAGE",wf.getName()+" CONTEXT "+wf.getRawContextKeys());
+        Logger.gl().d("CHANGEPAGE",wf.getWorkflowName()+" CONTEXT "+wf.getRawContextKeys());
         //null context == keep current
         if (wf.getRawContextKeys() != null) {
             Log.d("PAGESTACK", "generating new context: "+wf.getRawContextKeys().toString());
@@ -60,7 +60,7 @@ public class PageStack {
         try {
             template = wf.getTemplate();
         } catch (ParseException pe) {
-            Logger.gl().d("RUNTIME","Cannot open the workflow "+wf.getName()+". Missing type argument in PageDefine block");
+            Logger.gl().d("RUNTIME","Cannot open the workflow "+wf.getWorkflowName()+". Missing type argument in PageDefine block");
         }
         Log.d("v","Template "+template);
 
@@ -69,7 +69,7 @@ public class PageStack {
             Log.d("WARNING","Wrong template used - GIS blocks requires GisMapTemplate..substituting");
             template = "GisMapTemplate";
         }
-        Page newP = Tools.createPage(model,template,wf);
+        Page newP = Tools.createPage(model,template,wf,Expressor.analyze(wf.getLabelE(),context));
         newP.setWorkFlowContext(context);
         Page oldP = getInfocusPage();
         mStack.add(newP);
@@ -91,6 +91,8 @@ public class PageStack {
     public Page getInfocusPage() {
         return mStack.isEmpty()?null:mStack.get(mStack.size()-1);
     }
+
+    public Page getPreviousPage() { return mStack.size()<2?null:mStack.get(mStack.size()-2); }
 
     public LiveData<List<Page>> getPageLive() {
         return mPageLiveD;

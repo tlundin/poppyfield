@@ -5,6 +5,7 @@ import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 
+import com.teraime.poppyfield.pages.Page;
 import com.teraime.poppyfield.room.VariableTable;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
@@ -13,10 +14,11 @@ import java.util.List;
 import java.util.Map;
 
 public class WFRunner {
-    public static void getVisitedBlocks(Workflow workflow) {
+    public static void getVisitedBlocks(Workflow workflow, Context ctx, Page p) {
         //Get all db entries for current key. Wait for it.
         WorldViewModel mWorld = WorldViewModel.getStaticWorldRef();
-        Log.d("w","Executing simul run for "+workflow);
+        Log.d("w","%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% "+workflow);
+        Log.d("w","CONTEXT:"+ctx);
         List<Block> visiBlocks = new LinkedList<>();
         for (Block b: workflow.getBlocks()) {
             Log.d("v",b.getBlockType());
@@ -26,7 +28,8 @@ public class WFRunner {
             switch (b.getBlockType()) {
                 case "block_set_value":
                     String varTarget = b.getAttr("target");
-                    //String eval = Expressor.analyze(Expressor.preCompileExpression(b.getAttr("expression")),mWorld.getWorkflowContext());
+                    String eval = Expressor.analyze(Expressor.preCompileExpression(b.getAttr("expression")),ctx);
+                    Log.d("getVisited","EVAL: "+eval);
                     break;
                 case "block_add_gis_image_view":
                 case "block_add_gis_layer":

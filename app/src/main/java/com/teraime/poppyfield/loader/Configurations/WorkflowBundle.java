@@ -58,7 +58,7 @@ public class WorkflowBundle extends Config<WorkflowBundle> {
         wfMap = new HashMap<>();
         try {
         for (Workflow wf:wd.bundle)
-            wfMap.put(wf.getName(),wf);
+            wfMap.put(wf.getWorkflowName(),wf);
         } catch (Exception e) {
             Logger.gl().e("Workflow missing name");
             throw new ParseException("Failed to extract name from Workflow",-1);

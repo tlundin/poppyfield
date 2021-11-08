@@ -25,8 +25,8 @@ public abstract class TemplateFragment extends Fragment {
 
     @Override
     public void onResume() {
-        Log.d("LIFECYCLE","IN onResume for "+getName());
-        model.getToolBar().setTitle(getName());
+        Log.d("LIFECYCLE","IN onResume for template "+getName());
+        model.getToolBar().setTitle(model.getPageStack().getInfocusPage().getName());
         super.onResume();
     }
 

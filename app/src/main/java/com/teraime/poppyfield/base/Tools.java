@@ -113,12 +113,12 @@ public class Tools {
 
 
 
-    public static Page createPage(WorldViewModel model, String template, Workflow wf) {
+    public static Page createPage(WorldViewModel model, String template, Workflow wf, String name) {
         switch (template) {
             case "GisMapTemplate":
-                return new GISPage(model,template,wf);
+                return new GISPage(model,template,wf,name);
             default:
-                return new Page(model,template,wf);
+                return new Page(model,template,wf,name);
         }
     }
 

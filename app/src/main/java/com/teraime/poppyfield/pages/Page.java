@@ -12,28 +12,23 @@ import com.teraime.poppyfield.viewmodel.WorldViewModel;
 public class Page {
 
     protected Fragment mFragment;
-    final String mTemplateType, mName;
+    final String mTemplateType;
     final protected WorldViewModel model;
     final protected Workflow workFlow;
     protected Context mWorkFlowContext;
+    final String mName;
 
-    public Page(WorldViewModel model, String template, Workflow wf) {
+    public Page(WorldViewModel model, String template, Workflow wf, String name) {
         mTemplateType = template;
-        if (wf != null)
-            mName = wf.getName().replace("wf_", "");
-        else
-            mName = "Boot";
-
         this.workFlow = wf;
         this.model=model;
-
-
+        this.mName = name;
     }
 
     public void onCreate(Fragment f) {
         Log.d("v","On Create for page "+getName());
         mFragment=f;
-        WFRunner.getVisitedBlocks(workFlow);
+        WFRunner.getVisitedBlocks(workFlow,mWorkFlowContext, this);
     }
 
     public String getTemplateType() {

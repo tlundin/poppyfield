@@ -1236,6 +1236,14 @@ public class Expressor {
                         return mContext.getColumnValues().get((String) evalArgs.get(0));
                     }
                     break;
+                case historical:
+                    Log.d("vortex","In historical with "+evalArgs.get(0));
+                    if (checkPreconditions(evalArgs,1,No_Null_Literal)) {
+                        //Previous context check
+                        mWorld.getPageStack().getPreviousPage().getWorkflowContext().getVariableValues().get(evalArgs.get(0));
+                    } else
+                        Log.e("vortex","Argument failed nonull literal"+evalArgs.get(0));
+                    break;
                 case getUserName:
                     return "tony";//this.getGlobalPrefs().getString(PersistenceHelper.USER_ID_KEY,"Tony");
                 case sum:

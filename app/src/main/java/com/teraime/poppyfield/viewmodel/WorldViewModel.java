@@ -249,11 +249,13 @@ public class WorldViewModel extends AndroidViewModel {
     public LiveData<Context> generateNewContext(Map<String,String> mKeyValues) {
         MutableLiveData<Context> ret = new MutableLiveData<Context>();
         final AtomicInteger loadC = new AtomicInteger(0);
+        DBHelper.ColTranslate colTranslator = mDBHelper.getColTranslator();
         LiveData<List<VariableTable>> globs = mRepository.getGlobalVariables();
-        LiveData<List<VariableTable>> vars = mRepository.getWorkflowVariables(mKeyValues,mDBHelper.getColTranslator());
+        LiveData<List<VariableTable>> vars = mRepository.getWorkflowVariables(mKeyValues,colTranslator);
         final Map<String, String> vMap = new HashMap<>();
-        final Map<String, String> cMap = new HashMap<>();
+        final Map<String, String> cMap = new HashMap<>(mKeyValues);
         final Map<String, String> globMap = new HashMap<>();
+
         globs.observeForever(globTables -> {
             Log.d("GLOB","GLOB!");
             globMap.putAll(Tools.extractValues(globTables));
@@ -269,6 +271,7 @@ public class WorldViewModel extends AndroidViewModel {
             if (loadC.incrementAndGet() > 1)
                 ret.postValue(new Context(vMap,globMap,cMap));
         });
+
         return ret;
     }
 

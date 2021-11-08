@@ -24,10 +24,11 @@ public class Context {
          gVars = globs;
          mCols = cols;
          mVars = vars;
+
     }
 
     @Override
     public String toString() {
-        return "GLOBALS:\n"+getGlobalValues().toString()+"\nVARS: \n"+getVariableValues().toString()+"\nCOLS:\n"+getColumnValues().toString();
+        return "\nGLOBALS:\n"+getGlobalValues().toString()+"\nVARS: \n"+getVariableValues().toString()+"\nCOLS:\n"+getColumnValues().toString();
     }
 }

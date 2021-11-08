@@ -11,7 +11,7 @@ public class Workflow {
 
     final List<Block> blocks;
     final Map<String, List<Block>> blockM;
-    final List<Expressor.EvalExpr> mContext;
+    final List<Expressor.EvalExpr> mContext, mLabelE;
 
 
     public Workflow(List<Block> _blocks) {
@@ -24,20 +24,34 @@ public class Workflow {
             blockM.get(type).add(b);
         }
         String context = blocks.get(0).mAttrs.get("context");
-            mContext = Expressor.preCompileExpression(context);
+        mContext = Expressor.preCompileExpression(context);
+        List<Block> define_page = blockM.get("block_define_page");
+        if (define_page!=null) {
+            String labelE = define_page.get(0).getAttr("label");
+            if (labelE != null)
+                mLabelE = Expressor.preCompileExpression(labelE);
+            else
+                mLabelE = null;
+        } else
+            mLabelE = null;
+
         if (context != null)
-            Log.d("CHANGEPAGE",context+" FOR "+this.getName());
+            Log.d("CHANGEPAGE",context+" FOR "+this.getWorkflowName());
         else
-            Log.d("CHANGEPAGE","NULL CONTEXT FOR "+this.getName());
+            Log.d("CHANGEPAGE","NULL CONTEXT FOR "+this.getWorkflowName());
     }
 
-    public String getName() {
+    public String getWorkflowName() {
         return blocks.get(0).mAttrs.get("workflowname");
+    }
+
+    public List<Expressor.EvalExpr> getLabelE() {
+        return mLabelE;
     }
 
     @Override
     public String toString() {
-        return getName();
+        return getWorkflowName();
     }
 
     public List<Expressor.EvalExpr> getRawContextKeys() { return mContext; }

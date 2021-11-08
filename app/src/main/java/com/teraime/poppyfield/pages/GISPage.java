@@ -41,8 +41,8 @@ import java.util.Map;
 
 public class GISPage extends Page {
 
-    public GISPage(WorldViewModel model, String template, Workflow wf) {
-        super(model, template, wf);
+    public GISPage(WorldViewModel model, String template, Workflow wf, String name) {
+        super(model, template, wf,name);
     }
     @Override
     public void onCreate(Fragment f) {
@@ -164,6 +164,7 @@ public class GISPage extends Page {
     @Override
     public void reload() {
         model.setLoadState("LOADING");
+        model.getMap().clear();
         determineBoundary();
         spawnLayers();
     };
@@ -173,11 +174,11 @@ public class GISPage extends Page {
 
     private void determineBoundary() {
         Block gis = workFlow.getBlock(Block.GIS);
-        String topNorth =    gis.getAttr("TopN");
-        String topEast =     gis.getAttr("TopE");
-        String bottomNorth = gis.getAttr("BottomN");
-        String bottomEast =  gis.getAttr("BottomE");
-        PhotoMeta p = new PhotoMeta(topNorth,bottomEast, bottomNorth,topEast );
+        String N =    gis.getAttr("N");
+        String E =     gis.getAttr("E");
+        String S = gis.getAttr("S");
+        String W =  gis.getAttr("W");
+        PhotoMeta p = new PhotoMeta(N,E, S,W );
         if (p.isValid()) {
             Log.d("GISPage", p.toString());
             LatLng NE = Geomatte.convertToLatLong(p.E, p.N);

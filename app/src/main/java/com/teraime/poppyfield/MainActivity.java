@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
+import com.teraime.poppyfield.base.Expressor;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
 import com.teraime.poppyfield.base.Tools;
@@ -106,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
             if (item.mElems != null){
                 for (Map<String, String> elem : item.mElems) {
                     Log.d("KOOK",item.mElems.toString());
-                    MenuItem entry = menu.add(R.id.wf_group, itemId++, orderIdx++, elem.get("target"));
+                    MenuItem entry = menu.add(R.id.wf_group, itemId++, orderIdx++, Expressor.analyze(model.getWorkFlowBundle().getWf(elem.get("target")).getLabelE(),null));
                     entry.setOnMenuItemClickListener(item1 -> {
                         Log.d("MainActivity","menu item clicked");
                         model.getPageStack().changePage(elem.get("target"));
