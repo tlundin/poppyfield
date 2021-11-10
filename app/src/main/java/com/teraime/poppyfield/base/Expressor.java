@@ -1,5 +1,6 @@
 package com.teraime.poppyfield.base;
 
+import android.database.Cursor;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -229,7 +230,7 @@ public class Expressor {
     }
 
     private static List<Token> tokenize(String formula) {
-        System.out.println("Tokenize this: "+formula);
+        //System.out.println("Tokenize this: "+formula);
         List<Token> result= new ArrayList<>();
         char c;
         StringBuilder currToken=new StringBuilder();
@@ -1182,7 +1183,68 @@ public class Expressor {
 
                     }
                     break;
+                case historical:
+                    Log.d("vortex","In historical with "+evalArgs.get(0));
+                    if (checkPreconditions(evalArgs,1,No_Null_Literal)) {
+                        //Previous context check
+                        return getPrevious((String)evalArgs.get(0));
+                    } else
+                        Log.e("vortex","Argument failed nonull literal"+evalArgs.get(0));
+                    break;
+                case getHistoricalListValue:
+                    gH=true;
+                case getListValue:
+                    String strRes="?";
+                    if (checkPreconditions(evalArgs,1,No_Null_Literal)) {
+                        String varName = (String)evalArgs.get(0);
+                        Log.d("vortex","in listvalue with variable "+varName);
+                        Variable v = mContext.getVariableCache().getVariable(varName);
+                        if (v != null) {
+                            strRes = gH?getPrevious(varName):v.getValue();
+                            if (v.getType() == Variable.DataType.list) {
+                                Log.d("vortex", "The variable is a list with elemnts: " + v.getVariableConfiguration().getListElements());
+                                List<String> lElems = v.getVariableConfiguration().getListElements();
 
+                                if (lElems != null && lElems.size() > 0) {
+                                    if (lElems.get(0).equals("@file")) {
+                                        Log.d("vortex", "FILE!");
+                                        List<Spinners.SpinnerElement> spinnerDefs = mWorld.getSpinnerDefinitions().get(v.getId().toLowerCase());
+                                        Log.e("vortex", "got definitions: " + spinnerDefs.toString());
+                                        for (Spinners.SpinnerElement spd:spinnerDefs) {
+                                            //Log.d("vortex","value: "+spd.value+" string: "+spd.opt);
+                                            if (spd.value.equals(strRes)) {
+                                                strRes = spd.opt;
+                                                Log.d("vortex","match! "+spd.opt);
+                                                break;
+                                            }
+                                        }
+                                    } else if (!lElems.get(0).startsWith("@")) {
+
+                                        Log.e("vortex","value: "+strRes);
+                                        for (String elem : lElems) {
+                                            Log.d("vortex","elem: "+elem);
+                                            elem = elem.replace("{","").replace("}","");
+                                            String[] pair = (elem.split("="));
+                                            if (pair.length > 1) {
+                                                Log.d("vortex","pair[0]: "+pair[0]+" pair[1]: "+pair[1]);
+                                                if (pair[1].equals(strRes)) {
+                                                    strRes = pair[0];
+                                                    break;
+                                                }
+                                            } else {
+                                                Log.e("vortex", "could not split on = ... exit");
+                                            }
+
+                                        }
+                                    }
+                                }
+                            } else {
+                                Log.e("vortex", "cannot apply function to non list variable");
+                                o.e("Cannot apply function "+getType()+"to non list variable "+evalArgs.get(0));
+                            }
+                        }
+                    }
+                    return strRes;
                 case getCurrentYear:
                     return Clock.getYear();
                 case getCurrentMonth:
@@ -1236,14 +1298,9 @@ public class Expressor {
                         return mContext.getColumnValues().get((String) evalArgs.get(0));
                     }
                     break;
-                case historical:
-                    Log.d("vortex","In historical with "+evalArgs.get(0));
-                    if (checkPreconditions(evalArgs,1,No_Null_Literal)) {
-                        //Previous context check
-                        mWorld.getPageStack().getPreviousPage().getWorkflowContext().getVariableValues().get(evalArgs.get(0));
-                    } else
-                        Log.e("vortex","Argument failed nonull literal"+evalArgs.get(0));
-                    break;
+                case getAppName:
+                    return mWorld.getApp();
+
                 case getUserName:
                     return "tony";//this.getGlobalPrefs().getString(PersistenceHelper.USER_ID_KEY,"Tony");
                 case sum:
@@ -1289,6 +1346,11 @@ public class Expressor {
             }
             return null;
         }
+
+        private String getPrevious(String var) {
+            return WorldViewModel.getStaticWorldRef().getPageStack().getPreviousPage().getWorkflowContext().getVariableValues().get(var);
+        }
+
         /*
         private Boolean booleanValue(Object obj) {
             if (obj==null)
@@ -1426,7 +1488,7 @@ public class Expressor {
             if (e == null)
                 e = ef.next();
             if (e == null) {
-                System.out.println("continue on null");
+                //System.out.println("continue on null");
                 continue;
             }
 
@@ -1533,7 +1595,7 @@ public class Expressor {
             return null;
         }
         o = Logger.gl();
-        Log.d("EXPR","Precompiling: "+expression);
+        //Log.d("EXPR","Precompiling: "+expression);
         List<Token> result = tokenize(expression);
         //printTokens(result);
         List<EvalExpr> endResult = new ArrayList<>();
@@ -1556,7 +1618,7 @@ public class Expressor {
                 //	sb.append(e);
                 //
                 //o.addRow("Precompiled: "+sb);
-                Log.d("EXPR","Precompiled: "+endResult.toString());
+                //Log.d("EXPR","Precompiled: "+endResult.toString());
                 return endResult;
             }
 

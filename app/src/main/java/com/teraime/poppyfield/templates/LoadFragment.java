@@ -3,7 +3,6 @@ package com.teraime.poppyfield.templates;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,16 +39,18 @@ public class LoadFragment extends Fragment {
             progressDrawable.setColorFilter(Color.RED, android.graphics.PorterDuff.Mode.SRC_IN);
             pb.setProgressDrawable(progressDrawable);
 
-            AtomicInteger x= new AtomicInteger();
-            final Observer<String> logObserver = subject -> {
-                pb.setMax(model.getModuleCount());
-                tv.setText(subject);
-                pb.setProgress(x.getAndIncrement(),true);
-            };
+            if (model.isAppEntry() && !model.loadDone()) {
+                AtomicInteger x = new AtomicInteger();
+                final Observer<String> logObserver = subject -> {
+                    pb.setMax(model.getModuleCount());
+                    tv.setText(subject);
+                    pb.setProgress(x.getAndIncrement(), true);
+                };
 
-            progress.observe(this.getViewLifecycleOwner(),logObserver);
-            model.startLoad();
-
+                progress.observe(this.getViewLifecycleOwner(), logObserver);
+                model.startLoad();
+            }
+            model.getToolBar().setTitle("");
             return v;
 
         }

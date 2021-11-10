@@ -96,6 +96,7 @@ public class FieldPadRepository {
     }
 
     public void deleteSomeHistorical(List<String> gisToDelete, DBHelper.ColTranslate colTranslate) {
+        Log.d("DELETE","DELETING HISTORICAL");
         for (String gisType:gisToDelete) {
             SimpleSQLiteQuery query =
                     new SimpleSQLiteQuery("DELETE FROM variabler where year=='H' AND "+colTranslate.ToReal("gistyp")+"=='"+gisType+"'");
@@ -118,8 +119,11 @@ public class FieldPadRepository {
     public LiveData<LatLngBounds> getBoundary() {
         return mBoundaries;
     }
-    public BitmapDescriptor getmImgOverlay() {
-        return mImgOverlay;
+
+    public BitmapDescriptor consumeImgOverlay() {
+        BitmapDescriptor ret = mImgOverlay;
+        mImgOverlay = null;
+        return ret;
     }
     public MutableLiveData<Pair> getJsonObjLD() { return jsonObjLD; }
 
@@ -343,4 +347,6 @@ public class FieldPadRepository {
     public void setBoundary(LatLngBounds latLngBounds) {
         mBoundaries.setValue(latLngBounds);
     }
+
+
 }

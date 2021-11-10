@@ -64,6 +64,7 @@ public class WorkflowConfigurationParser {
             else if (name.equals("workflow")) {
                 //Add workflow to bundle, return a count.
                 wd.bundle.add(readWorkflow(parser));
+                Log.d("wf","added "+wd.bundle.get(wd.bundle.size()-1).getWorkflowName());
 
             } else {
                 skip(name,parser);
@@ -124,7 +125,7 @@ public class WorkflowConfigurationParser {
 
 
     private static Block createBlock(String blockName, XmlPullParser parser) throws IOException, XmlPullParserException {
-        Log.d("v","Creating block "+blockName);
+        //Log.d("v","Creating block "+blockName);
         Map<String,String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         String id=null;
         parser.require(XmlPullParser.START_TAG, null,blockName);

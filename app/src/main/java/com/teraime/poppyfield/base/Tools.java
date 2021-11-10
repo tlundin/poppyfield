@@ -2,9 +2,12 @@ package com.teraime.poppyfield.base;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.util.Log;
 
 import androidx.fragment.app.Fragment;
 
+import com.teraime.poppyfield.R;
 import com.teraime.poppyfield.pages.GISPage;
 import com.teraime.poppyfield.pages.Page;
 import com.teraime.poppyfield.room.VariableTable;
@@ -194,5 +197,37 @@ public class Tools {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static int getColorResource(Context ctx, String colorName) {
+        return Tools.getColorResource(ctx,colorName, R.color.black);
+    }
+
+    public static int getColorResource(Context ctx, String colorName, int defaultColor) {
+
+        if(colorName !=null) {
+            if (colorName.startsWith("#"))
+                return Color.parseColor(colorName);
+            else if (colorName.equalsIgnoreCase("black"))
+                return Color.BLACK;
+            else if (colorName.equalsIgnoreCase("white"))
+                return Color.WHITE;
+            else if (colorName.equalsIgnoreCase("green"))
+                return Color.GREEN;
+            else if (colorName.equalsIgnoreCase("red"))
+                return Color.RED;
+            else if (colorName.equalsIgnoreCase("blue"))
+                return Color.BLUE;
+            else if (colorName.equalsIgnoreCase("Lightgray"))
+                return Color.parseColor("#D3D3D3");
+            try {
+                int resourceId = ctx.getResources().getIdentifier(colorName.toLowerCase(), "color", ctx.getPackageName());
+                return ctx.getColor(resourceId);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        Log.e("plax","Color "+colorName+" not known...returning default");
+        return ctx.getColor(defaultColor);
     }
 }

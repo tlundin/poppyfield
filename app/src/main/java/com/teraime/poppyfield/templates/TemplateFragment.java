@@ -12,8 +12,13 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class TemplateFragment extends Fragment {
     protected WorldViewModel model;
+    protected Map<String, ViewGroup> mContainers = new HashMap<>();
+
     @Nullable
 
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle _savedInstanceState, int template_id) {
@@ -29,6 +34,10 @@ public abstract class TemplateFragment extends Fragment {
         model.getToolBar().setTitle(model.getPageStack().getInfocusPage().getName());
         super.onResume();
     }
+
+    public Map<String,ViewGroup> getContainers() {
+        return mContainers;
+    };
 
 
     public abstract String getName();

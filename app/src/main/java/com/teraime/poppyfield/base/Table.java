@@ -84,6 +84,19 @@ public class Table {
 
         return ErrCode.ok;
     }
+
+    public int getColumnIndex(String c) {
+        //Log.d("vortex","My columns: "+myColumns.toString());
+        for (int i=0;i<myColumns.size();i++)
+            if (c.equalsIgnoreCase(myColumns.get(i)))
+                return i;
+        return -1;
+    }
+
+    public List<String> getColumnHeaders() {
+        return myColumns;
+    }
+
     public ArrayList<String> getColumnRealNames() {
         return keyParts;
     }

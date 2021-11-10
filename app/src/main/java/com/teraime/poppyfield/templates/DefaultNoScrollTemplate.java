@@ -18,6 +18,7 @@ import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -31,6 +32,8 @@ public class DefaultNoScrollTemplate extends TemplateFragment {
 	public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 		return super.onCreateView(inflater,container,savedInstanceState,R.layout.template_wf_default_no_scroll);
 	}
+
+
 
 	@Override
 	public String getName() {

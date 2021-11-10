@@ -24,6 +24,7 @@ import com.teraime.poppyfield.base.GeoJsonGenerator;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
+import com.teraime.poppyfield.base.Spinners;
 import com.teraime.poppyfield.base.Table;
 import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.base.ValueProps;
@@ -60,18 +61,18 @@ public class WorldViewModel extends AndroidViewModel {
     private final PageStack mPageStack;
     private final Loader mLoader;
     private MenuDescriptor mMenuDescriptor;
-    private boolean appEntry = true;
     private SharedPreferences mAppPrefs,globalPrefs;
     private DBHelper mDBHelper;
-
-    private Map<String, String> mEvalProps;
     private static final int DEFAULT_THREAD_POOL_SIZE = 10;
     private GisObject mTouchedGeoObject;
+    private boolean isAppEntry;
+    private Table mTable;
 
     public WorldViewModel(Application application) {
         super(application);
+        isAppEntry = true;
         globalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
-        this.app=globalPrefs.getString("App","poppyfield");
+        this.app=globalPrefs.getString("App","vortex");
         mAppPrefs = application.getSharedPreferences(app, android.content.Context.MODE_PRIVATE);
         mExecutorService = Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
         mRepository = new FieldPadRepository(application,mExecutorService);
@@ -85,6 +86,7 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
     public String getApp() { return app; }
+    public Table getTable() { return mTable; }
     public ExecutorService getExecutor() { return mExecutorService; }
 
     //Livedata
@@ -100,7 +102,7 @@ public class WorldViewModel extends AndroidViewModel {
     }
     public void deleteGisObjects(List<String> gisToDelete) { if (gisToDelete==null) deleteAllGisObjects(); else mRepository.deleteSomeHistorical(gisToDelete,mDBHelper.getColTranslator());}
     public void insert(VariableTable variable) { mRepository.insert(variable); }
-    public void getBoundaryFromImage(String metaSource) {
+    public void setBoundaryFromImage(String metaSource) {
                 mRepository.updateBoundary(app, metaSource);
     }
 
@@ -110,7 +112,7 @@ public class WorldViewModel extends AndroidViewModel {
     public GoogleMap getMap() {
         return mMap;
     }
-    public BitmapDescriptor getmImgOverlay() { return  mRepository.getmImgOverlay();}
+    public BitmapDescriptor consumeImgOverlay() { return  mRepository.consumeImgOverlay();}
 
 
     public PageStack getPageStack() {
@@ -130,21 +132,21 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
 
-    public String getCacheFolder() {
-        return cachePath;
-    }
-
     public Application getActivity() { return mActivity; }
 
     public MenuDescriptor getMenuDescriptor() {
-        if (mMenuDescriptor == null)
+        if (mMenuDescriptor == null) {
             mMenuDescriptor = new MenuDescriptor(getWorkFlowBundle().getMainWf().getBlocks());
-        else
-            appEntry=false;
+            return mMenuDescriptor;
+        }
         return mMenuDescriptor;
     }
 
-    public boolean isAppEntry() {return appEntry;}
+    public boolean isAppEntry() {return isAppEntry;}
+    public void appEntryDone() { isAppEntry = false;
+    }
+
+    public boolean loadDone() { return mLoader.isReady(); }
 
     public List<GisType> getAllgeoData() { return mLoader.getGeoData();}
     public List<GisObject> getGeoDataType(String type) { return mLoader.getGeoDataType(type);}
@@ -174,15 +176,6 @@ public class WorldViewModel extends AndroidViewModel {
     public Map<String,String> getVariableExtraFields(String key) {
         return mLoader.getTable().getVariableExtraFields(key);
     }
-
-    public Variable getVariable(String varName) {
-        if (mEvalProps.containsKey(varName)) {
-            Log.d("vagel","Found "+varName+" in evalProps!");
-            return new Variable(mLoader.getTable().getVariableExtraFields(varName), new ValueProps().setValue(mEvalProps.get(varName)));
-        }
-        return null;
-    }
-
 
     public SharedPreferences getAppPrefs() {
         return mAppPrefs;
@@ -232,6 +225,7 @@ public class WorldViewModel extends AndroidViewModel {
 
     public void createDbHelper(Table t) {
         mDBHelper = new DBHelper(t.getColumnRealNames(),mAppPrefs);
+        mTable = t;
     }
 
     public static WorldViewModel getStaticWorldRef() {
@@ -280,5 +274,9 @@ public class WorldViewModel extends AndroidViewModel {
 
     public void setBoundaryFromCoordinates(LatLngBounds latLngBounds) { mRepository.setBoundary(latLngBounds); }
 
+
+    public Spinners getSpinnerDefinitions() {
+        return mLoader.getSpinners();
+    }
 }
 

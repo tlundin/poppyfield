@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     WorldViewModel model;
     DialogInterface.OnClickListener dialogClickListener;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,13 +50,22 @@ public class MainActivity extends AppCompatActivity {
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         PageStack stack = model.getPageStack();
 
+        if (model.isAppEntry()) {
+            //Present load screen
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.content_frame,
+                            new LoadFragment())
+                    .commit();
+        }
         final Observer<String> loadObserver = ping -> {
-            if (ping.equals("Table") && model.getModuleCount()>0)
+            if (ping.equals("GisObjects") && model.getModuleCount()>0)
                 model.prepareGeoData();
-            else if (ping.equals("done") || ping.equals("Table")) {
+            else if (ping.equals("done") || ping.equals("Table") && model.getModuleCount() == 0) {
                 populateMenu(navi.getMenu(), model.getMenuDescriptor());
-                if (model.isAppEntry())
+                if (model.isAppEntry()) {
                     drawerLayout.openDrawer(GravityCompat.START);
+                    model.appEntryDone();
+                }
                 model.setAllGisTypesLoaded();
             }
         };
@@ -82,11 +93,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        //Present load screen
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.content_frame,
-                        new LoadFragment())
-                .commit();
+
 
         stack.getPageLive().observe(this,pageObserver);
         model.getLogObservable().observe(this, loadObserver);

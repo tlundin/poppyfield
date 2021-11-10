@@ -5,7 +5,10 @@ import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+
+import com.teraime.poppyfield.pages.GISPage;
 import com.teraime.poppyfield.pages.Page;
+import com.teraime.poppyfield.templates.GisMapTemplate;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -19,6 +22,7 @@ public class PageStack {
     public enum EventTypes { NONE, NEW_PAGE, POP}
 
     private EventTypes mEvent;
+    private GISPage prevGisPage;
 
     public PageStack(WorldViewModel world) {
         mStack = new ArrayList<>();
@@ -73,15 +77,22 @@ public class PageStack {
         newP.setWorkFlowContext(context);
         Page oldP = getInfocusPage();
         mStack.add(newP);
-        if (oldP == null || !template.equals(oldP.getTemplateType())) {
+        //Reuse the same map object.
+        if (oldP != null && oldP.getClass() == GISPage.class)
+            prevGisPage = (GISPage) oldP;
+        if (newP.getClass() == GISPage.class && prevGisPage != null) {
+                prevGisPage.clear();
+                newP.onCreate(prevGisPage.getFragment());
+                newP.reload();
+                Log.d("Frags-reuse map",mStack.toString());
+
+        }
+        else  {
             Log.d("Frags-new",mStack.toString());
             mEvent = EventTypes.NEW_PAGE;
             mPageLiveD.setValue(mStack);
-        } else {
-            Log.d("Frags-old",mStack.toString());
-            newP.onCreate(oldP.getFragment());
-            newP.reload();
         }
+        //if (oldP == null || !template.equals(oldP.getTemplateType()))
 
     }
 
@@ -105,15 +116,19 @@ public class PageStack {
             return;
         }
 
-        Page infocusPage = getInfocusPage();
-        Page previousPage = mStack.get(mStack.size()-2);
+        Page pageToPop = getInfocusPage();
+        Page currentPage = getPreviousPage();
         mStack.remove(mStack.size()-1);
-        if (!previousPage.getTemplateType().equals(infocusPage.getTemplateType())) {
+        if (pageToPop.getClass() == GISPage.class) {
+            Log.d("Frags","Clearing Popped GIS Page!");
+            ((GISPage)pageToPop).clear();
+        }
+        if (!pageToPop.getTemplateType().equals(currentPage.getTemplateType())) {
             mEvent = EventTypes.POP;
-            Log.d("Frags","Pop - different Fragment type. Infocus: "+getInfocusPage().getName()+" previous: "+previousPage.getName());
+            Log.d("Frags","Pop - different Fragment type. Infocus: "+currentPage.getName()+" previous: "+pageToPop.getName());
             mPageLiveD.setValue(mStack);
         } else {
-            Log.d("Frags","Pop - same Fragment type. Infocus: "+getInfocusPage().getName()+" previous: "+previousPage.getName());
+            Log.d("Frags","Pop - same Fragment type. Infocus: "+currentPage.getName()+" previous: "+pageToPop.getName());
             getInfocusPage().reload();
         }
 

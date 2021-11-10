@@ -11,7 +11,10 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.GroundOverlay;
+import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -32,6 +35,7 @@ import com.teraime.poppyfield.base.Tools;
 import com.teraime.poppyfield.base.Workflow;
 import com.teraime.poppyfield.gis.Geomatte;
 import com.teraime.poppyfield.gis.PhotoMeta;
+import com.teraime.poppyfield.templates.TemplateFragment;
 import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import org.json.JSONObject;
@@ -41,11 +45,16 @@ import java.util.Map;
 
 public class GISPage extends Page {
 
+    BitmapDescriptor mImgOverlay;
+    LatLngBounds mBoundaries;
+    GroundOverlay mGroundOverlay;
+
+
     public GISPage(WorldViewModel model, String template, Workflow wf, String name) {
         super(model, template, wf,name);
     }
     @Override
-    public void onCreate(Fragment f) {
+    public void onCreate(TemplateFragment f) {
         super.onCreate(f);
     }
 
@@ -70,6 +79,8 @@ public class GISPage extends Page {
         gl.addLayerToMap();
         Log.d("drawLayer","Adding layer "+gisBlock.getAttr("label"));
         gl.setOnFeatureClickListener((GeoJsonLayer.GeoJsonOnFeatureClickListener) feature -> {
+
+            Log.d("GISPage","got click on feature");
             //feature contains all keys under properties.
             //required for lookup.
             String featureCols = feature.getProperty("COLUMNS");
@@ -164,8 +175,10 @@ public class GISPage extends Page {
     @Override
     public void reload() {
         model.setLoadState("LOADING");
-        model.getMap().clear();
-        determineBoundary();
+        if (mBoundaries == null)
+            determineBoundary();
+        else
+            model.setBoundaryFromCoordinates(mBoundaries);
         spawnLayers();
     };
 
@@ -191,8 +204,35 @@ public class GISPage extends Page {
                 source = source.split(",")[0];
                 source = Expressor.analyze(Expressor.preCompileExpression(source), mWorkFlowContext);
                 Log.d("v3", "In reload - source: " + source);
-                model.getBoundaryFromImage(source);
+                model.setBoundaryFromImage(source);
             }
         }
     }
+
+    public BitmapDescriptor getImgOverlay() {
+        if (mImgOverlay == null)
+            mImgOverlay = model.consumeImgOverlay();
+        return mImgOverlay;
+    }
+
+    public void setBoundary(LatLngBounds latLngBounds) {
+        mBoundaries = latLngBounds;
+    }
+
+    public void setGroundOverlay(GroundOverlay groundOverlay) {
+        Log.d("CLEAR","setting Groundoverlay for "+mName);
+        mGroundOverlay = groundOverlay;
+    }
+
+    public void clear() {
+        Log.d("CLEAR","CALLING CLEAR ON PREV GISPAGE");
+        model.getMap().clear();
+        Log.d("CLEAR","Checking Groundoverlay for "+mName);
+        if (mGroundOverlay != null) {
+            Log.d("CLEAR","Removing ground overlay");
+            mGroundOverlay.remove();
+        }
+    }
+
+
 }

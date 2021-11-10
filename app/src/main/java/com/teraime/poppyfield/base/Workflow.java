@@ -35,10 +35,6 @@ public class Workflow {
         } else
             mLabelE = null;
 
-        if (context != null)
-            Log.d("CHANGEPAGE",context+" FOR "+this.getWorkflowName());
-        else
-            Log.d("CHANGEPAGE","NULL CONTEXT FOR "+this.getWorkflowName());
     }
 
     public String getWorkflowName() {

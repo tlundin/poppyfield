@@ -22,6 +22,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.material.snackbar.Snackbar;
@@ -33,14 +34,11 @@ import org.json.JSONObject;
 
 public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallback {
 
-    private GISPage mPage;
+
     private MapView mMap;
     private ActivityResultLauncher<String> requestPermission;
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-    }
+
 
     @SuppressLint("MissingPermission")
     @Nullable
@@ -48,19 +46,24 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         Log.d("GIS","Oncreate for Map "+((Object)this).toString());
         View v = super.onCreateView(inflater,container,savedInstanceState,R.layout.template_gis_map);
-        mPage = (GISPage)model.getPageStack().getInfocusPage();
         assert v!=null;
         requestPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> { if (isGranted) { if (model.getMap()!=null) model.getMap().setMyLocationEnabled(true);}});
         LiveData<LatLngBounds> camBoundsL = model.getMapBoundary();
         LiveData<String>loadL = model.getLoadState();
         LiveData<Pair> layerL = model.getGeoJsonLD();
         Observer<? super LatLngBounds> boundsObserver = (Observer<LatLngBounds>) latLngBounds -> {
+            GISPage mPage = (GISPage)model.getPageStack().getInfocusPage();
+            Log.d("MPAGE BOUNDS",mPage.getName());
             //getmImgOverlay
             if (latLngBounds != null) {
-                if (model.getmImgOverlay() != null)
-                    model.getMap().addGroundOverlay(new GroundOverlayOptions()
+                mPage.setBoundary(latLngBounds);
+                if (mPage.getImgOverlay() != null) {
+                    GroundOverlay groundOverlay = model.getMap().addGroundOverlay(new GroundOverlayOptions()
                             .positionFromBounds(latLngBounds)
-                            .image(model.getmImgOverlay()));
+                            .image(mPage.getImgOverlay()));
+                    mPage.setGroundOverlay(groundOverlay);
+
+                }
                 model.getMap().moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 0));
             }
             model.setLoadState("DONE");
@@ -76,6 +79,8 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         };
         //Pair contains - block (first) geojson (second)
         Observer<Pair> layerObserver = json -> {
+            GISPage mPage = (GISPage)model.getPageStack().getInfocusPage();
+            Log.d("MPAGE LAYER",mPage.getName());
             Block bl = (Block)json.first;
             JSONObject jo = (JSONObject)json.second;
             mPage.drawLayer(bl,jo);
@@ -90,7 +95,8 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
         mMap = v.findViewById(R.id.myMap);
         mMap.onCreate(savedInstanceState);
         mMap.getMapAsync(this);
-        mPage.onCreate(this);
+        ((GISPage)model.getPageStack().getInfocusPage()).onCreate(this);
+        Log.d("MPAGE CREATE",((GISPage)model.getPageStack().getInfocusPage()).getName());
         return v;
     }
 
@@ -98,7 +104,7 @@ public class GisMapTemplate extends TemplateFragment implements OnMapReadyCallba
     public void onMapReady(GoogleMap googleMap) {
         model.setMap(googleMap);
         Log.d("READY","CALLING ONMAP READY");
-        mPage.onMapReady();
+        ((GISPage)model.getPageStack().getInfocusPage()).onMapReady();
         showUserIfAllowed(googleMap);
     }
 

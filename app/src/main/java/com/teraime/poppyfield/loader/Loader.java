@@ -42,6 +42,7 @@ public class Loader {
     private String mApp;
     private List<String> mFilesToLoadToDatabase = null;
     private Map<String,String> gisFilesNewVersions = new HashMap<>();
+    private boolean isReady = false;
 
 
 
@@ -56,83 +57,88 @@ public class Loader {
      */
     public void load(String app, WorldViewModel v) {
         mWorld = v;mApp = app;
-                ////////////////
-                //loadManifest();
-                loadWorkFlows();
-                loadSpinners();
-                loadTableData();
-                ////////////////
+        ////////////////
+        loadManifest();
+        loadWorkFlows();
+        loadSpinners();
+        loadTableData();
+        ////////////////
 
     }
 
     public List<String> getGisFilesToLoad() {
+        Log.d("LOADER","gis files to load: "+mFilesToLoadToDatabase);
         return mFilesToLoadToDatabase;
     }
 
     public void markAllLoaded() {
         SharedPreferences.Editor editor = mWorld.getAppPrefs().edit();
-        editor.clear();
-        editor.commit();
         for (String key:gisFilesNewVersions.keySet()) {
             editor.putString(key,gisFilesNewVersions.get(key));
             Log.d("LOADER","Saved "+key+" with value "+ gisFilesNewVersions.get(key));
         }
         editor.commit();
+        isReady = true;
+    }
+
+    public boolean isReady() {
+        return isReady;
     }
 
     private enum Mode {CORE,GIS,EXTRA};
 
     private void loadManifest() {
         AtomicReference<Mode> m= new AtomicReference<>(Mode.CORE);
-        List<String> gisFilesToLoad = new ArrayList();
         SharedPreferences prefs = mWorld.getAppPrefs();
         WebLoader.getManifest(fileList -> {
-            if (fileList !=null) {
+            Set<String> headers = new HashSet<String>(Arrays.asList("core", "gis_objects", "extras"));
+            if (fileList ==null || !fileList.containsAll(headers)) {
+                Logger.gl().e("Faulty or missing manifest");
+                WebLoader.getGisManifest(_fileList -> {
+                    if (fileList == null)
+                        throw new IOException("Could not download the GIS manifest");
+                    loadGisModules(_fileList);
+                }, mApp);
+            } else {
+                List<String> gisFilesToLoad = new ArrayList();
                 Log.d("MANIFEST", fileList.toString());
-                Set<String> headers = new HashSet<String>(Arrays.asList("core", "gis_objects", "extras"));
+
                 int moduleCount = 0;
                 String[] nameVer;
-                if (fileList.containsAll(headers)) {
-                    for (String configFile : fileList) {
-                        if (headers.contains(configFile)) {
-                            switch (configFile) {
-                                case "core":
-                                    m.set(Mode.CORE);
-                                    continue;
-                                case "gis_objects":
-                                    m.set(Mode.GIS);
-                                    continue;
-                                default:
-                                    m.set(Mode.EXTRA);
-                                    continue;
-                            }
+                for (String configFile : fileList) {
+                    if (headers.contains(configFile)) {
+                        switch (configFile) {
+                            case "core":
+                                m.set(Mode.CORE);
+                                continue;
+                            case "gis_objects":
+                                m.set(Mode.GIS);
+                                continue;
+                            default:
+                                m.set(Mode.EXTRA);
+                                continue;
                         }
-                        Log.d("M", configFile);
-                        nameVer = configFile.split(",");
-                        if (nameVer.length == 2) {
-                            //check if stored
-                            if (m.get() == Mode.GIS) {
-                                String currentVersion = prefs.getString(nameVer[0], null);
-                                Log.d("LOADER","current version for "+nameVer[0]+" is "+currentVersion);
-                                if (currentVersion == null || !currentVersion.equals(nameVer[1])) {
-                                    Log.d("LOADER","must load "+gisFilesToLoad);
-                                    gisFilesToLoad.add(nameVer[0]);
-                                    gisFilesNewVersions.put(nameVer[0],nameVer[1]);
-                                }
+                    }
+                    Log.d("M", configFile);
+                    nameVer = configFile.split(",");
+                    if (nameVer.length == 2) {
+                        //check if stored
+                        if (m.get() == Mode.GIS) {
+                            String currentVersion = prefs.getString(nameVer[0], null);
+                            Log.d("LOADER", "current version for " + nameVer[0] + " is " + currentVersion);
+                            if (currentVersion == null || !currentVersion.equals(nameVer[1])) {
+                                Log.d("LOADER", "must load " + gisFilesToLoad);
+                                gisFilesToLoad.add(nameVer[0]);
+                                gisFilesNewVersions.put(nameVer[0], nameVer[1]);
                             }
                         }
                     }
-                    loadGisModules(gisFilesToLoad);
-                } else {
-                    Logger.gl().e("incomplete manifest");
-                    WebLoader.getGisManifest(_fileList -> {
-                        if (fileList == null)
-                            throw new IOException("Could not download the GIS manifest");
-                        loadGisModules(_fileList);
-                    }, mApp);
                 }
-            }
 
+                loadGisModules(gisFilesToLoad);
+
+
+            }
         }, mApp);
 
     }
@@ -171,7 +177,7 @@ public class Loader {
         Logger.gl().d("PARSE", "App Name: " + module);
         WebLoader.getModule(moduleFile -> {
             if (moduleFile != null) {
-                Logger.gl().d("LOAD", "[Bundle loaded.]");
+                Logger.gl().d("LOAD", "[WorkflowBundle loaded.]");
                 try {
                     Log.d("WORK", moduleFile.toString());
                     wf = new WorkflowBundle().stringify(moduleFile).parse();

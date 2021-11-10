@@ -29,6 +29,7 @@ public class WorkflowBundle extends Config<WorkflowBundle> {
             sb.append("\n");
         }
         sData=sb.toString();
+        rawData = data;
         return this;
     }
 
