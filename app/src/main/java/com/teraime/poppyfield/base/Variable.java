@@ -1,14 +1,19 @@
 package com.teraime.poppyfield.base;
 
+import android.util.ArraySet;
 import android.util.Log;
 
+import com.teraime.poppyfield.pages.Page;
 import com.teraime.poppyfield.room.VariableTable;
+import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,11 +24,46 @@ public class Variable {
     String mName;
     Table mTable;
     VariableConfiguration mVarConf;
+    private boolean usingDefault;
+    private boolean iAmOutOfRange=false;
 
     public Variable(String varName, Table t,Context context) {
         mName = varName;
         mContext = context;
         mTable = t;
+    }
+
+    public String getHistValue() {
+        Page prev = WorldViewModel.getStaticWorldRef().getPageStack().getPreviousPage();
+        if (prev!=null)
+            return prev.getWorkflowContext().getVariableValues().get(mName);
+        return null;
+    }
+
+    public void setValueWithDefault(String value) {
+        usingDefault = true;
+        mContext.getVariableValues().put(mName,value);
+    }
+
+    public Context getContext() {
+        return mContext;
+    }
+
+    public String getLabel() {
+        return getVariableConfiguration().getVarLabel();
+    }
+
+    public void deleteValue() {
+        mContext.getVariableValues().put(mName,null);
+    }
+
+    public void setValue(String newValue) {
+        mContext.getVariableValues().put(mName,newValue);
+    }
+
+    public boolean isContextVariable() {
+        //TODO - implement
+        return false;
     }
 
     public enum DataType {
@@ -35,17 +75,32 @@ public class Variable {
     }
 
     public String getValue() {
+
         return mContext.getVariableValues().get(mName);
+
     }
-    
+
+    public boolean hasValueOutOfRange() {
+        return iAmOutOfRange;
+    }
+
+
+    public void setOutOfRange(boolean oor) {
+        iAmOutOfRange = oor;
+    }
+
     public VariableConfiguration getVariableConfiguration() {
         if (mVarConf == null)
-            mVarConf = new VariableConfiguration(mTable, mTable.getRowFromKey(mName));
+            mVarConf = new VariableConfiguration(mTable.getRowFromKey(mName));
         return mVarConf;
     }
 
     public DataType getType() {
-        return DataType.valueOf(mTable.getVariableExtraFields(mName).get("Type"));
+        return getVariableConfiguration().getnumType();
+    }
+
+    public boolean isUsingDefault() {
+        return usingDefault;
     }
 
     public enum Scope {
@@ -84,15 +139,15 @@ public class Variable {
 
         private List<String> row;
         private Map<String,Integer>fromNameToColumn;
-        
-        public VariableConfiguration(Table myTable,List<String> row) {
+
+        public VariableConfiguration(List<String> row) {
             this.row = row;
             fromNameToColumn = new HashMap<String,Integer>();
             for (String c:requiredColumns) {
-                int tableIndex = myTable.getColumnIndex(c);
+                int tableIndex = mTable.getColumnIndex(c);
                 if (tableIndex==-1) {
                     Log.e("nils","Missing column: "+c);
-                    Log.e("nils","Table has "+myTable.getColumnHeaders().toString());
+                    Log.e("nils","Table has "+mTable.getColumnHeaders().toString());
                     return;
                 }
                 else
@@ -123,6 +178,22 @@ public class Variable {
 
         public String getVarLabel() {
             return row.get(fromNameToColumn.get(requiredColumns.get(VARIABLE_LABEL)));
+        }
+
+        public String getEntryLabel() {
+            if (row == null)
+                return null;
+            String  res= mTable.getElement(Col_Group_Label, row);
+            //If this is a non-art variable, use varlabel instead.
+            if (res==null) {
+                //Log.d("vortex","failed to find value for column "+Col_Group_Label+ ". Will use varlabel "+this.getVarLabel(row)+" instead.");
+                //gs.getLogger().addRow("");
+                //gs.getLogger().addYellowText("failed to find value for column "+Col_Group_Label+ ". Will use variable label "+this.getVarLabel(row)+" instead.");
+                res =this.getVarLabel();
+            }
+            if (res == null)
+                Log.e("nils","getEntryLabel failed to find a Label for row: "+row.toString());
+            return res;
         }
 
         public String getVariableDescription() {
@@ -226,5 +297,18 @@ public class Variable {
             }
             return unit;
         }
+
+        public String getUrl() {
+            return mTable.getElement("Internet link", row);
+        }
+
+        public String getDescription() {
+            String b = mTable.getElement(Col_Group_Description, row);
+            if(b==null)
+                b = this.getVariableDescription();
+
+            return (b==null?"":b);
+        }
     }
 }
+

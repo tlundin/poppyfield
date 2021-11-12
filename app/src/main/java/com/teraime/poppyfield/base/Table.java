@@ -131,4 +131,21 @@ public class Table {
         }
 
     }
+
+    public String getElement(String columnName,List<String> row) {
+        String result = null;
+        int index = getColumnIndex(columnName);
+        if (index !=-1) {
+            if (row.size()>index)
+                result = row.get(index);
+            //Log.d("nils","found field "+columnName+": "+result+" in class Table");
+        } else {
+            Logger o = Logger.gl();
+            o.e("Did not find column named "+columnName);
+            Log.e("nils","Did NOT find field ["+columnName+"] in class Table. Columns available:");
+            for (int i=0;i<myColumns.size();i++)
+                Log.e("vortex","["+myColumns.get(i)+"]");
+        }
+        return result;
+    }
 }

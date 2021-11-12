@@ -14,4 +14,7 @@
         <item name="android:windowTranslucentStatus">true</item>
         <!-- Customize your theme here. -->
     </style>
+    <style name="PurpleStyle" parent="@android:style/Widget.TextView">
+        <item name="android:textColor">@color/purple</item>
+    </style>
 </resources>

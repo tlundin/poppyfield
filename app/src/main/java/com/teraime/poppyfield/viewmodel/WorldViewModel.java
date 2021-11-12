@@ -159,6 +159,9 @@ public class WorldViewModel extends AndroidViewModel {
     }
 
 
+    public LiveData<List<VariableTable>> queryFromMap(Map<String, String> keyMap) {
+        return mRepository.queryGisObjects(keyMap, mDBHelper.getColTranslator());
+    }
     public LiveData<JSONObject> queryGisObjects(Map<String, String> keyMap) {
         Log.d("GLERP", keyMap.toString());
         MutableLiveData<JSONObject> donePing = new MutableLiveData<>();
@@ -277,6 +280,10 @@ public class WorldViewModel extends AndroidViewModel {
 
     public Spinners getSpinnerDefinitions() {
         return mLoader.getSpinners();
+    }
+
+    public String getDatabaseColumnName(String inAppColName) {
+        return mDBHelper.getColTranslator().ToDB(inAppColName);
     }
 }
 

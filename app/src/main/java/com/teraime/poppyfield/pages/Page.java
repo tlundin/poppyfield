@@ -63,8 +63,9 @@ public class Page {
         Map<String, ViewGroup> containers = mFragment.getContainers();
         for (String container:blocksToDraw.keySet()) {
             for(Drawable blockToDraw:blocksToDraw.get(container)) {
-                Log.d("PAGE","Added "+blockToDraw.toString()+" to "+container);
+                Log.d("PAGE","Drawing "+blockToDraw.toString()+" to "+container);
                 containers.get(container).addView(blockToDraw.getWidget());
+                blockToDraw.refresh();
             }
         }
     }

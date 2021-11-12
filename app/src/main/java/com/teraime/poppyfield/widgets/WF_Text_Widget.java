@@ -11,7 +11,7 @@ import android.widget.TextView;
 import com.teraime.poppyfield.R;
 import com.teraime.poppyfield.base.Tools;
 
-public class WF_Text_Widget extends WF_Widget {
+public abstract class WF_Text_Widget extends WF_Widget {
     public WF_Text_Widget(String id, Context ctx, String label, String backgroundColor, String textColor, View v, boolean isVisible, int textSize, int horizontalMargin, int verticalMargin) {
         super(id,label,v,isVisible);
         if (label!=null) {
@@ -27,4 +27,6 @@ public class WF_Text_Widget extends WF_Widget {
         if (backgroundColor!=null)
             getWidget().setBackgroundColor(Tools.getColorResource(ctx,backgroundColor));
     }
+
+
 }

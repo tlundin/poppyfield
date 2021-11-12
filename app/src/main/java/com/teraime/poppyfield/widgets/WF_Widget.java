@@ -3,7 +3,7 @@ package com.teraime.poppyfield.widgets;
 import android.util.Log;
 import android.view.View;
 
-public class WF_Widget extends WF_Thing implements Drawable {
+public abstract class WF_Widget extends WF_Thing implements Drawable {
 
 	private final View myView;
 	private String label;
@@ -37,7 +37,10 @@ public class WF_Widget extends WF_Thing implements Drawable {
 	public boolean isVisible() {
 		return isVisible;
 	}
-	
+
+	@Override
+	public abstract void refresh();
+
 	@Override
 	public void show() {
 		Log.d("nils","Showing view ");
@@ -53,8 +56,4 @@ public class WF_Widget extends WF_Thing implements Drawable {
 		isVisible = false;
 	}
 
-
-	public void postDraw() {
-
-	}
 }

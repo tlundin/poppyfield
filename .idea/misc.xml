@@ -7,10 +7,19 @@
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/drawable/ic_menu_24dp.xml" value="0.15260416666666668" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/activity_layout.xml" value="0.13645833333333332" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/activity_main.xml" value="0.3625" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/display_value_textview_horizontal.xml" value="0.234375" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/drawer.xml" value="0.1640625" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/drawer_layout.xml" value="0.2515625" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/edit_field_float.xml" value="0.234375" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/edit_field_numeric.xml" value="0.234375" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/edit_field_slider.xml" value="0.234375" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/edit_field_spinner.xml" value="0.234375" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/edit_field_text.xml" value="0.234375" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/header_navigation_drawer.xml" value="0.1640625" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/input_container.xml" value="0.234375" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/ja_nej_radiogroup.xml" value="0.234375" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/load_fragment.xml" value="0.3333333333333333" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/output_field_selection_element.xml" value="0.1984375" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/selection_field_normal_horizontal.xml" value="0.19895833333333332" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/start.xml" value="0.18854166666666666" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/layout/template_gis_map.xml" value="0.19791666666666666" />
@@ -22,6 +31,7 @@
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/menu/drawer_menu.xml" value="0.5" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/menu/main.xml" value="0.1640625" />
         <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/menu/navigation_drawer.xml" value="0.16666666666666666" />
+        <entry key="..\:/Users/terje/dev/poppyfield/app/src/main/res/menu/tagpopmenu.xml" value="0.234375" />
       </map>
     </option>
   </component>

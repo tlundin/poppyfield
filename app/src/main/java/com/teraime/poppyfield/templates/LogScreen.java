@@ -58,7 +58,7 @@ public class LogScreen extends TemplateFragment {
         Map<String, List<String>> log = Logger.gl().debug();
         for (String k : log.keySet()) {
             SpannableString sp = new SpannableString("\n" + k);
-            sp.setSpan(new ForegroundColorSpan(ContextCompat.getColor(getContext(), (k.equals("FAILURES")) ? R.color.crimson : R.color.limegreen)
+            sp.setSpan(new ForegroundColorSpan(ContextCompat.getColor(getContext(), (k.equals("FAILURES")) ? R.color.salmon : R.color.green)
             ), 0, sp.length(), 0);
             sp.setSpan(new StyleSpan(Typeface.BOLD), 0, sp.length(), 0);
             builder.append(sp);

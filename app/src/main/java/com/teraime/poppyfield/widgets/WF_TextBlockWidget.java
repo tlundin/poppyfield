@@ -14,9 +14,13 @@ import com.teraime.poppyfield.base.Tools;
 
 public class WF_TextBlockWidget extends WF_Text_Widget {
 
-	public WF_TextBlockWidget(String id,Context ctx, String label, String backgroundColor,  boolean isVisible, int textSize, int horizontalMargin, int verticalMargin) {
+	public WF_TextBlockWidget(String id,Context ctx, String label, String backgroundColor,String text_color,  boolean isVisible, int textSize, int horizontalMargin, int verticalMargin) {
 		super(id, ctx,label,backgroundColor,"black", LayoutInflater.from(ctx).inflate(R.layout.text_block,null), isVisible,textSize,horizontalMargin,verticalMargin);
 	}
-	
-	
+
+
+	@Override
+	public void refresh() {
+		//NOOP
+	}
 }

@@ -1559,6 +1559,16 @@ public class Expressor {
         return valStack.isEmpty()?null:(EvalExpr) valStack.pop();
     }
 
+    public static Boolean analyzeBooleanExpression(EvalExpr expr, Context mContext) {
+        Object eval = expr.eval(mContext);
+        if (eval !=null && !(eval instanceof Boolean)) {
+            Log.e("vortex","eval was not bool back in analyzeBoolean...likely missing [..]?");
+            o.e("The expression "+expr.toString()+" evaluated to: '"+eval.getClass()+"' but must be Boolean. Missing [ ] around the expression can cause this");
+            return false;
+        } else
+            return (Boolean)eval;
+    }
+
     public static String analyze(List<EvalExpr> expressions,Context mContext) {
         if (expressions == null) {
             Logger.gl().e("Expression was null in Analyze. This is likely due to a syntax error in the original formula");

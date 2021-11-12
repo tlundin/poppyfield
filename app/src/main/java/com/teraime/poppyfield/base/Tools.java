@@ -6,6 +6,8 @@ import android.graphics.Color;
 import android.util.Log;
 
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
+import androidx.sqlite.db.SimpleSQLiteQuery;
 
 import com.teraime.poppyfield.R;
 import com.teraime.poppyfield.pages.GISPage;
@@ -25,11 +27,15 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class Tools {
 
@@ -229,5 +235,69 @@ public class Tools {
         }
         Log.e("plax","Color "+colorName+" not known...returning default");
         return ctx.getColor(defaultColor);
+    }
+
+
+    public static LiveData<List<VariableTable>> requestDynamicList(Variable variable) {
+        String[] opt = null;
+        WorldViewModel model = WorldViewModel.getStaticWorldRef();
+        Variable.VariableConfiguration al = variable.getVariableConfiguration();
+        com.teraime.poppyfield.base.Context.VariableCache vc = variable.getContext().getVariableCache();
+
+        Logger o = Logger.gl();
+        List<String> listValues = al.getListElements();
+        Log.d("nils", "Found dynamic list definition for variable " + variable.getId() + ": " + listValues);
+
+        if (listValues != null && listValues.size() > 0) {
+            String[] columnSelector = listValues.get(0).split("=");
+            String[] column = null;
+            boolean error = false;
+            if (columnSelector[0].equalsIgnoreCase("@col")) {
+                Log.d("nils", "found column selector");
+                //Column to select.
+                String dbColName = model.getDatabaseColumnName(columnSelector[1]);
+                if (dbColName != null) {
+                    Log.d("nils", "Real Column name for " + columnSelector[1] + " is " + dbColName);
+                    column = new String[1];
+                    column[0] = dbColName;
+                } else {
+                    Log.d("nils", "Column referenced in List definition for variable " + al.getVarLabel() + " not found: " + columnSelector[1]);
+                    o.e("Column referenced in List definition for variable " + al.getVarLabel() + " not found: " + columnSelector[1]);
+                    error = true;
+                }
+                if (!error) {
+                    //Any other columns part of key?
+                    Map<String, String> keySet = new HashMap<String, String>();
+                    if (listValues.size() > 1) {
+                        //yes..include these in search
+                        Log.d("nils", "found additional keys...");
+                        String[] keyPair;
+                        for (int i = 1; i < listValues.size(); i++) {
+                            keyPair = listValues.get(i).split("=");
+                            if (keyPair != null && keyPair.length == 2) {
+                                String valx = variable.getContext().getVariableValues().get(keyPair[1]);
+                                if (valx != null)
+                                    keySet.put(keyPair[0], valx);
+                                else {
+                                    Log.e("nils", "The variable " + keyPair[1] + " used for dynamic list " + variable.getLabel() + " is not returning a value");
+                                    o.e("The variable " + keyPair[1] + " used for dynamic list " + variable.getLabel() + " is not returning a value");
+                                }
+                            } else {
+                                Log.d("nils", "Keypair error: " + Arrays.toString(keyPair));
+                                o.e("Keypair referenced in List definition for variable " + variable.getLabel() + " cannot be read: " + Arrays.toString(keyPair));
+                            }
+                        }
+
+                    } else
+                        Log.d("nils", "no additional keys..only column");
+
+
+                    LiveData<List<VariableTable>> values = model.queryFromMap(keySet);
+                    return values;
+
+                }
+            }
+        }
+        return null;
     }
 }
