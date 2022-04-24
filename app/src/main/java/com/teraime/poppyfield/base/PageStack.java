@@ -111,26 +111,28 @@ public class PageStack {
 
     //If false, no pop. Ask user if he wants to exit the app.
     public void pop() {
+
         if (mStack.size()==1) {
             Log.d("v","stack empty");
             return;
         }
-
         Page pageToPop = getInfocusPage();
         Page currentPage = getPreviousPage();
+        pageToPop.getWorkflowContext().getVariableCache().persist();
         mStack.remove(mStack.size()-1);
         if (pageToPop.getClass() == GISPage.class) {
             Log.d("Frags","Clearing Popped GIS Page!");
             ((GISPage)pageToPop).clear();
         }
-        if (!pageToPop.getTemplateType().equals(currentPage.getTemplateType())) {
+        if (pageToPop instanceof GISPage && currentPage instanceof GISPage) {
+            Log.d("Frags","Pop - same Gis. Infocus: "+currentPage.getName()+" previous: "+pageToPop.getName());
+            getInfocusPage().reload();
+        } else {
             mEvent = EventTypes.POP;
             Log.d("Frags","Pop - different Fragment type. Infocus: "+currentPage.getName()+" previous: "+pageToPop.getName());
             mPageLiveD.setValue(mStack);
-        } else {
-            Log.d("Frags","Pop - same Fragment type. Infocus: "+currentPage.getName()+" previous: "+pageToPop.getName());
-            getInfocusPage().reload();
         }
+
 
     }
 

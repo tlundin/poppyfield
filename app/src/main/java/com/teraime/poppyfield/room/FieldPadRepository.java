@@ -18,9 +18,11 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.teraime.poppyfield.base.Block;
+import com.teraime.poppyfield.base.Context;
 import com.teraime.poppyfield.base.DBHelper;
 import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.Tools;
+import com.teraime.poppyfield.base.Variable;
 import com.teraime.poppyfield.gis.Geomatte;
 import com.teraime.poppyfield.gis.GisConstants;
 import com.teraime.poppyfield.gis.GisObject;
@@ -30,10 +32,12 @@ import com.teraime.poppyfield.loader.ImgLoaderCb;
 import com.teraime.poppyfield.loader.LoaderCb;
 import com.teraime.poppyfield.loader.WebLoader;
 import com.teraime.poppyfield.loader.parsers.JGWParser;
+import com.teraime.poppyfield.viewmodel.WorldViewModel;
 
 import org.json.JSONObject;
 
 import java.io.File;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -197,6 +201,7 @@ public class FieldPadRepository {
     public LiveData<List<VariableTable>> getWorkflowVariables(Map<String, String> wfKeyMap, DBHelper.ColTranslate colTranslate) {
         if (wfKeyMap!=null) {
             StringBuilder sb = buildQueryBaseFromMap(wfKeyMap, colTranslate);
+            Log.d("PERSIST",sb.toString());
             return mVDao.rawVarQuery(new SimpleSQLiteQuery(sb.toString()));
         }
         return null;
@@ -313,6 +318,40 @@ public class FieldPadRepository {
         }
     }
 
+    public void insertVariables(List<Variable> vars,DBHelper.ColTranslate colTranslator) {
+        Map <String,String> am = new HashMap<>();
+        Variable.VariableConfiguration vc;
+        VariableTable vt;
+        Context ctx;
+        Log.d("PERSIST","colmap: "+colTranslator.toString());
+        String syncGroup = WorldViewModel.getStaticWorldRef().getSyncGroup();
+        String author = WorldViewModel.getStaticWorldRef().getUserName();
+        Timestamp ts = new Timestamp(System.currentTimeMillis());
+        long now = ts.getTime();
+        for (Variable v:vars) {
+            vc = v.getVariableConfiguration();
+            ctx = v.getContext();
+            String[] keys = vc.getKeyChain();
+            am.clear();
+            for (String key:keys) {
+                String val = ctx.getColumnValues().get(key);
+                String dbN = colTranslator.ToDB(key);
+                Log.d("col",dbN+" val "+val);
+                am.put(dbN,val);
+            }
+            //TODO: ENFORCE UUID FOR ALL VARS
+            String uuid=v.getId()==null?vc.getVarName():v.getId();
+            vt = new VariableTable(0,uuid,am.get("year"),vc.getVarName(),v.getValue(),syncGroup,author,now,
+            am.get("L1"), am.get("L2"), am.get("L3"), am.get("L4"), am.get("L5"), am.get("L6"), am.get("L7"), am.get("L8"), am.get("L9"), am.get("L10"));
+            Log.d("PERSIST",vt.toMap().toString());
+            insert(vt);
+        }
+    }
+
+    public void insertVariable(Variable v) {
+
+    }
+
 
     public void generateLayer(Block gisBlock, Map<String, String> gisLayerContext, final JSONObject geoJsonData) {
 
@@ -347,6 +386,7 @@ public class FieldPadRepository {
     public void setBoundary(LatLngBounds latLngBounds) {
         mBoundaries.setValue(latLngBounds);
     }
+
 
 
 }

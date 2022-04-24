@@ -65,7 +65,7 @@ public class WFRunner {
                         dbg = ("Stopping on " + blockId + " Reason: Eval null for " + b.getAttr("expression"));
                         STOP = true;
                     } else if (eval != null) {
-                        workflowContext.getVariableValues().put(varTarget,eval);
+                        workflowContext. getVariableValues().put(varTarget,eval);
                     }
                     break;
                 case "block_add_gis_image_view":

@@ -3,11 +3,11 @@ package com.teraime.poppyfield.viewmodel;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Pair;
 
 import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
@@ -21,13 +21,12 @@ import com.teraime.poppyfield.base.Context;
 import com.teraime.poppyfield.base.DBHelper;
 import com.teraime.poppyfield.base.Expressor;
 import com.teraime.poppyfield.base.GeoJsonGenerator;
-import com.teraime.poppyfield.base.Logger;
 import com.teraime.poppyfield.base.MenuDescriptor;
 import com.teraime.poppyfield.base.PageStack;
+import com.teraime.poppyfield.base.PersistenceHelper;
 import com.teraime.poppyfield.base.Spinners;
 import com.teraime.poppyfield.base.Table;
 import com.teraime.poppyfield.base.Tools;
-import com.teraime.poppyfield.base.ValueProps;
 import com.teraime.poppyfield.base.Variable;
 import com.teraime.poppyfield.gis.GisObject;
 import com.teraime.poppyfield.loader.Configurations.Config;
@@ -42,9 +41,9 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WorldViewModel extends AndroidViewModel {
@@ -55,6 +54,8 @@ public class WorldViewModel extends AndroidViewModel {
     private final String cachePath;
     private final ExecutorService mExecutorService;
     private final String app;
+    private final String userName;
+    private final String syncGroup;
     private GoogleMap mMap;
     private final Application mActivity;
     private MaterialToolbar topAppBar;
@@ -73,6 +74,8 @@ public class WorldViewModel extends AndroidViewModel {
         isAppEntry = true;
         globalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
         this.app=globalPrefs.getString("App","vortex");
+        this.syncGroup=globalPrefs.getString("syncgroup",app+"_synkgroup");
+        this.userName=globalPrefs.getString("username","Berit_"+ (new Random()).nextInt());
         mAppPrefs = application.getSharedPreferences(app, android.content.Context.MODE_PRIVATE);
         mExecutorService = Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE);
         mRepository = new FieldPadRepository(application,mExecutorService);
@@ -87,6 +90,12 @@ public class WorldViewModel extends AndroidViewModel {
 
     public String getApp() { return app; }
     public Table getTable() { return mTable; }
+    public String getSyncGroup() {
+        return syncGroup;
+    }
+    public String getUserName() {
+        return userName;
+    }
     public ExecutorService getExecutor() { return mExecutorService; }
 
     //Livedata
@@ -253,20 +262,30 @@ public class WorldViewModel extends AndroidViewModel {
         final Map<String, String> cMap = new HashMap<>(mKeyValues);
         final Map<String, String> globMap = new HashMap<>();
 
+        Observer observer = new Observer<List<VariableTable>>() {
+            @Override
+            public void onChanged(List<VariableTable> varTables) {
+                Log.d("GLOB","GLOB!");
+                globMap.putAll(Tools.extractValues(globTables));
+                if (loadC.incrementAndGet() > 1) {
+                    ret.postValue(new Context(globMap, vMap, cMap));
+                    globs.removeObservers(this);
+                }
+            }
+        };
         globs.observeForever(globTables -> {
-            Log.d("GLOB","GLOB!");
-            globMap.putAll(Tools.extractValues(globTables));
-            if (loadC.incrementAndGet() > 1)
-                ret.postValue(new Context(vMap,globMap,cMap));
-        });
 
+        });
         vars.observeForever(varTables -> {
+            Log.d("GLOB","VLOB!");
             if (varTables !=null && !varTables.isEmpty()) {
                 vMap.putAll(Tools.extractValues(varTables));
                 cMap.putAll(Tools.extractColumns(varTables.get(0)));
             }
-            if (loadC.incrementAndGet() > 1)
-                ret.postValue(new Context(vMap,globMap,cMap));
+            if (loadC.incrementAndGet() > 1) {
+                ret.postValue(new Context(globMap, vMap, cMap));
+                vars.removeObservers((LifecycleOwner) getActivity());
+            }
         });
 
         return ret;
@@ -284,6 +303,10 @@ public class WorldViewModel extends AndroidViewModel {
 
     public String getDatabaseColumnName(String inAppColName) {
         return mDBHelper.getColTranslator().ToDB(inAppColName);
+    }
+
+    public void persistUserInput(List<Variable> vars) {
+        mRepository.insertVariables(vars,mDBHelper.getColTranslator());
     }
 }
 

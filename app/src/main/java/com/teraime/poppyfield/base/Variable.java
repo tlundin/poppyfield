@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -26,11 +27,12 @@ public class Variable {
     VariableConfiguration mVarConf;
     private boolean usingDefault;
     private boolean iAmOutOfRange=false;
-
+    private String valueAtCreate;
     public Variable(String varName, Table t,Context context) {
         mName = varName;
         mContext = context;
         mTable = t;
+        valueAtCreate=context.getVariableValues().get(varName);
     }
 
     public String getHistValue() {
@@ -61,10 +63,16 @@ public class Variable {
         mContext.getVariableValues().put(mName,newValue);
     }
 
+    public boolean hasChanged() {
+        return !Objects.equals(mContext.getVariableValues().get(mName),valueAtCreate);
+    }
+
     public boolean isContextVariable() {
         //TODO - implement
         return false;
     }
+
+
 
     public enum DataType {
         numeric,bool,list,text,existence,auto_increment, array, decimal
@@ -109,6 +117,7 @@ public class Variable {
         global_nosync,
         global_sync
     }
+
 
     public class VariableConfiguration {
 
@@ -244,21 +253,23 @@ public class Variable {
             return row.get(fromNameToColumn.get(requiredColumns.get(D_LIMIT)));
         }
 
-        public String getKeyChain() {
+        public String[] getKeyChain() {
             //Check for null or empty
-            if (row==null) {
+            if (row==null ) {
                 Log.d("vortex","row was null in getKeyChain");
                 return null;
             }
+            String keyChain = row.get(fromNameToColumn.get(requiredColumns.get(KEY_CHAIN)));
+
             Pattern pattern = Pattern.compile("\\s");
-            Matcher matcher = pattern.matcher(row.get(0));
+            Matcher matcher = pattern.matcher(keyChain);
             if(matcher.find()) {
-                Log.e("vortex","Space char found in keychain: "+row.get(0)+" length : "+row.get(0).length()+" size: "+row.size());
+                Log.e("vortex","Space char found in keychain: "+keyChain+" length : "+keyChain.length()+" Row size: "+row.size());
                 return null;
             }
 
             else
-                return row.get(fromNameToColumn.get(requiredColumns.get(KEY_CHAIN)));
+                return keyChain.split("\\|");
         }
 
         public String getFunctionalGroup() {

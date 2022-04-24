@@ -34,6 +34,7 @@ public class DBHelper {
     public interface ColTranslate {
         String ToDB(String inAppColName);
         String ToReal(String DBColName);
+        String toString();
     }
 
     public DBHelper(ArrayList<String> columnRealNames, SharedPreferences appPrefs) {
@@ -100,6 +101,9 @@ public class DBHelper {
             public String ToReal(String DBColName) {
                 return DBToRealColumnName.get(DBColName);
             }
+
+            @Override
+            public String toString() { return realToDBColumnName.toString();}
         };
     }
 

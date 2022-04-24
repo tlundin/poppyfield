@@ -561,6 +561,7 @@ public class WF_EntryField extends WF_Text_Widget {
 
     @Override
     public void refresh() {
+        Log.d("basco","refresh called for "+keyVar.getId());
         if (keyVar.getValue()==null) {
             String def = myVars.get(keyVar).defautlValue;
             if (def != null && !def.equals(Constants.NO_DEFAULT_VALUE)) {
