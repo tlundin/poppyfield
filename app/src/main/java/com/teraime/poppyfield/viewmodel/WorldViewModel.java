@@ -254,9 +254,8 @@ public class WorldViewModel extends AndroidViewModel {
 
     public LiveData<Context> generateNewContext(Map<String,String> mKeyValues) {
         MutableLiveData<Context> ret = new MutableLiveData<Context>();
-        final AtomicInteger loadC = new AtomicInteger(0);
+        //final AtomicInteger loadC = new AtomicInteger(0);
         DBHelper.ColTranslate colTranslator = mDBHelper.getColTranslator();
-        LiveData<List<VariableTable>> globs = mRepository.getGlobalVariables();
         LiveData<List<VariableTable>> vars = mRepository.getWorkflowVariables(mKeyValues,colTranslator);
         final Map<String, String> vMap = new HashMap<>();
         final Map<String, String> cMap = new HashMap<>(mKeyValues);
@@ -265,29 +264,16 @@ public class WorldViewModel extends AndroidViewModel {
         Observer observer = new Observer<List<VariableTable>>() {
             @Override
             public void onChanged(List<VariableTable> varTables) {
-                Log.d("GLOB","GLOB!");
-                globMap.putAll(Tools.extractValues(globTables));
-                if (loadC.incrementAndGet() > 1) {
-                    ret.postValue(new Context(globMap, vMap, cMap));
-                    globs.removeObservers(this);
+                Log.d("GLOB","vartables is "+varTables);
+                if (!varTables.isEmpty()) {
+                    vMap.putAll(Tools.extractValues(varTables));
+                    cMap.putAll(Tools.extractColumns(varTables.get(0)));
                 }
-            }
-        };
-        globs.observeForever(globTables -> {
-
-        });
-        vars.observeForever(varTables -> {
-            Log.d("GLOB","VLOB!");
-            if (varTables !=null && !varTables.isEmpty()) {
-                vMap.putAll(Tools.extractValues(varTables));
-                cMap.putAll(Tools.extractColumns(varTables.get(0)));
-            }
-            if (loadC.incrementAndGet() > 1) {
                 ret.postValue(new Context(globMap, vMap, cMap));
-                vars.removeObservers((LifecycleOwner) getActivity());
-            }
-        });
-
+                vars.removeObserver(this);
+                }
+        };
+        vars.observeForever(observer);
         return ret;
     }
 
